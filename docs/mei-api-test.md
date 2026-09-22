@@ -91,9 +91,21 @@ to `data/sample/mei-api-sample.json`.
   countries and editions printed in present-day Belgium, Germany, and
   Switzerland.
 
+## Tabular transformation
+
+The script `scripts/transform_mei_sample.py` transforms the saved JSON sample
+into three linked analytical tables for copies, provenance blocks, and place
+occurrences. It also generates a small technical relationship table so that
+the distinction between direct and `bound_with` results is not lost.
+
+The transformation deliberately retains catalogue-native identifiers and
+uncertainty. It does not infer missing dates or places, transfer provenance
+evidence between components, or formulate new names and titles. The JSON
+snapshot remains the complete source; the CSV files are reproducible views for
+inspection and later visualization.
+
 ## Next technical step
 
-Before querying the complete corpus, the sample should be transformed into
-three linked tables: copies, provenance events, and places. This will reveal
-which fields require normalization and which uncertainties must be preserved
-for the later visualizations.
+The tables should first be inspected for field coverage, unclear code values,
+and edge cases. Only then should the retrieval be extended from the six test
+identifiers to the complete corpus.

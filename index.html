@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Experimentelle Visualisierung offen zugänglicher Katalog- und Provenienzdaten zu gedruckten Gebetbüchern des 15. Jahrhunderts.">
+    <title>Prayer Books in Motion – Drucke in Bewegung</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Experimentelle Datenvisualisierung</p>
+        <h1>Prayer Books in Motion</h1>
+      </div>
+      <button id="about-button" class="quiet-button" type="button" aria-controls="about-panel">Über das Projekt</button>
+    </header>
+
+    <main class="workspace">
+      <aside class="controls" aria-label="Kartenauswahl">
+        <section class="time-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Drucke in Bewegung</p>
+              <h2>Aufenthaltsorte im Jahr <output id="year-output" for="year-slider">2026</output></h2>
+            </div>
+            <button id="reset-button" class="text-button" type="button">Zurücksetzen</button>
+          </div>
+          <input id="year-slider" class="year-slider" type="range" min="1450" max="2026" value="2026" step="1" aria-label="Jahr auswählen">
+          <div class="year-scale" aria-hidden="true"><span>1450</span><span>1500</span><span>1600</span><span>1800</span><span>2026</span></div>
+          <p class="method-note">Zwischen punktuellen Nachweisen wird der letzte bekannte Ort fortgeschrieben. Diese Zeiträume sind als Annäherung markiert.</p>
+        </section>
+
+        <section class="filter-panel" aria-labelledby="filter-title">
+          <h2 id="filter-title" class="visually-hidden">Drucke auswählen und filtern</h2>
+          <label class="search-label" for="search-input">Drucke durchsuchen</label>
+          <input id="search-input" class="search-input" type="search" placeholder="Titel, Signatur, MEI- oder ISTC-ID">
+          <div class="filter-grid">
+            <label> Druckort
+              <select id="place-filter"><option value="">Alle Druckorte</option></select>
+            </label>
+            <label> Sprache
+              <select id="language-filter"><option value="">Alle Sprachen</option></select>
+            </label>
+          </div>
+          <div class="selection-actions">
+            <button id="select-visible" class="text-button" type="button">Sichtbare markieren</button>
+            <button id="clear-visible" class="text-button" type="button">Sichtbare abwählen</button>
+          </div>
+        </section>
+
+        <div id="result-summary" class="result-summary" aria-live="polite">Daten werden geladen …</div>
+        <div id="print-list" class="print-list" aria-label="Liste der Drucke"></div>
+      </aside>
+
+      <section class="map-shell" aria-label="Karte der Druckwege">
+        <div id="map" class="map"></div>
+        <div class="map-legend" aria-label="Legende">
+          <span><i class="legend-dot documented"></i> zeitlich belegt</span>
+          <span><i class="legend-dot inferred"></i> fortgeschrieben</span>
+          <span><i class="legend-line"></i> dokumentierte Stationsfolge</span>
+        </div>
+        <div id="map-message" class="map-message" hidden></div>
+      </section>
+    </main>
+
+    <aside id="detail-panel" class="detail-panel" aria-labelledby="detail-title" aria-hidden="true">
+      <div class="detail-toolbar">
+        <p class="eyebrow">Einen Druck verfolgen</p>
+        <button id="detail-close" class="icon-button" type="button" aria-label="Detailansicht schliessen">×</button>
+      </div>
+      <div id="detail-content"></div>
+    </aside>
+
+    <aside id="about-panel" class="about-panel" aria-labelledby="about-title" aria-hidden="true">
+      <div class="detail-toolbar">
+        <p class="eyebrow">Projektinformation</p>
+        <button id="about-close" class="icon-button" type="button" aria-label="Projektinformation schliessen">×</button>
+      </div>
+      <h2 id="about-title">Was diese Karte zeigt</h2>
+      <p>Die Anwendung aggregiert offen zugängliche Daten aus GW, ISTC und MEI. Sie erzeugt keine neuen Katalog- oder Provenienznachweise, sondern erprobt ihre gemeinsame Visualisierung.</p>
+      <p>Gerade Linien verbinden belegte Stationen in der überlieferten Reihenfolge; sie behaupten keine konkrete Reiseroute. Der Zeitregler stellt keinen lückenlosen historischen Aufenthaltsnachweis her: Zwischen datierten Stationen wird der zuletzt bekannte Ort lediglich fortgeschrieben.</p>
+      <p>Mehrdeutige, nur auf Länderebene bekannte oder nicht geografische Angaben bleiben in den Details erhalten und werden nicht automatisch auf der Karte verortet.</p>
+    </aside>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="assets/app.js" defer></script>
+  </body>
+</html>

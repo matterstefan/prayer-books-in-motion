@@ -33,7 +33,27 @@ The identifiers and terminology of the source catalogues will be retained wherev
 
 ## Status
 
-The project is currently in an early development phase. Data structures, automated workflows and visualisation methods are being tested and documented in this repository.
+The project is currently in an early development phase. Data structures,
+automated workflows and visualisation methods are being tested and documented
+in this repository. The repository root contains a first static map prototype
+that can be published with GitHub Pages.
+
+## Web visualisation
+
+The prototype reads the current CSV tables directly from `data/derived/`; it
+does not contain a separate embedded data export. Open it through a web server
+or GitHub Pages, because browsers do not permit the required CSV requests when
+`index.html` is opened as a local file.
+
+For a local preview from the repository root:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000`. See
+[`docs/web-visualisation.md`](docs/web-visualisation.md) for the interface and
+time-slider rules.
 
 ## Context
 

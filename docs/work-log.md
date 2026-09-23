@@ -51,5 +51,3 @@ This log documents the development of *Prayer Books in Motion*, including techni
 * Await technical information about GW interfaces or export formats.
 * Create a data dictionary for the current corpus and MEI tables.
 * Extend the exploratory MEI retrieval to a larger pilot sample before processing the complete corpus.
-e current corpus and MEI tables.
-Extend the exploratory MEI retrieval to a larger pilot sample before processing the complete corpus.

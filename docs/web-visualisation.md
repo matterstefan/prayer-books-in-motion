@@ -44,6 +44,11 @@ snapshot. A non-geographic present-holding value such as `Historical Copy` or
 Undated stations remain visible in the copy details. They are not assigned an
 arbitrary year for the current-location marker.
 
+When the last provenance-place station and the current holding institution
+have identical coordinates, the interface combines them into one displayed
+final station. Any supplied historical date remains attached to the combined
+entry. The two source rows remain unchanged in the derived CSV table.
+
 ## Spatial rule
 
 Straight lines connect mapped stations in source order. They show the sequence

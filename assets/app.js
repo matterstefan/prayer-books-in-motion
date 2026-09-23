@@ -65,6 +65,33 @@ function point(station) { return [Number(station.latitude), Number(station.longi
 function numeric(value) { return value === "" ? null : Number(value); }
 function copyStations(copyId) { return state.stationsByCopy.get(copyId) || []; }
 function printStation(copyId) { return copyStations(copyId).find(s => s.station_type === "print_place"); }
+function samePoint(first, second) {
+  return Boolean(first && second && first.latitude && second.latitude &&
+    first.latitude === second.latitude && first.longitude === second.longitude);
+}
+
+function compactStationsForDisplay(copyId) {
+  const compacted = [];
+  for (const station of copyStations(copyId)) {
+    const previous = compacted.at(-1);
+    if (station.station_type === "current_holding" &&
+        previous?.station_type === "provenance_place" && samePoint(previous, station)) {
+      compacted[compacted.length - 1] = { ...station, mergedProvenance: previous };
+    } else {
+      compacted.push(station);
+    }
+  }
+  return compacted;
+}
+
+function compactMappedRoute(stations) {
+  const compacted = [];
+  for (const station of stations) {
+    if (samePoint(compacted.at(-1), station)) compacted[compacted.length - 1] = station;
+    else compacted.push(station);
+  }
+  return compacted;
+}
 
 function stationAnchor(station) {
   if (station.station_type === "current_holding") return numeric(station.observation_date.slice(0, 4)) || CURRENT_YEAR;
@@ -131,14 +158,14 @@ function filteredCopies() { return state.copies.filter(matchesFilters); }
 function displayedCopies() { return filteredCopies().filter(copy => state.selected.has(copy.copy_id)); }
 
 function routeSummary(copyId) {
-  const names = copyStations(copyId).map(s => s.location_label || s.preferred_placename || s.place_name).filter(Boolean);
+  const names = compactStationsForDisplay(copyId).map(s => s.location_label || s.preferred_placename || s.place_name).filter(Boolean);
   return names.filter((name, index) => index === 0 || name !== names[index - 1]).join(" → ");
 }
 
 function popupHtml(copy) {
   const station = printStation(copy.copy_id);
   return `<h3>${escapeHtml(copy.title || "Ohne Titel")}</h3>
-    <p class="popup-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")}, ${escapeHtml(printYear(copy))}<br>${escapeHtml(copy.shelfmark || "ohne Signatur")}</p>
+    <p class="popup-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")}, ${escapeHtml(printYear(copy))}<br>${escapeHtml(copy.holding_institution_name || "Aufbewahrungsort nicht angegeben")} · ${escapeHtml(copy.shelfmark || "ohne Signatur")}</p>
     <p class="popup-route">${escapeHtml(routeSummary(copy.copy_id))}</p>
     <button class="popup-button" type="button" data-track-id="${escapeHtml(copy.copy_id)}">Druck verfolgen</button>`;
 }
@@ -157,7 +184,7 @@ function renderMap({ fit = false } = {}) {
 
   for (const copy of copies) {
     const color = colorFor(copy.copy_id);
-    const route = routeAtYear(copy.copy_id, state.year);
+    const route = compactMappedRoute(routeAtYear(copy.copy_id, state.year));
     mappedStations += route.length;
     const coordinates = route.map(point);
     coordinates.forEach(value => bounds.push(value));
@@ -183,7 +210,7 @@ function renderMap({ fit = false } = {}) {
     }
   }
 
-  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} im Jahr ${state.year} verortet · ${mappedStations} sichtbare Stationen`;
+  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} im Jahr ${state.year} verortet · ${mappedStations} dargestellte Wegpunkte`;
   els["map-message"].hidden = copies.length > 0;
   els["map-message"].textContent = copies.length ? "" : "Für diese Auswahl sind keine Drucke markiert.";
   if (fit && bounds.length) map.fitBounds(bounds, { padding: [34, 34], maxZoom: 6 });
@@ -197,7 +224,7 @@ function renderList() {
     return `<div class="print-card ${checked ? "" : "is-unselected"}" data-copy-card="${escapeHtml(copy.copy_id)}">
       <input type="checkbox" data-copy-select="${escapeHtml(copy.copy_id)}" aria-label="Druck anzeigen: ${escapeHtml(copy.title || copy.copy_id)}" ${checked ? "checked" : ""}>
       <button class="print-card-body" type="button" data-copy-detail="${escapeHtml(copy.copy_id)}"><span class="print-title">${escapeHtml(copy.title || "Ohne Titel")}</span>
-      <span class="print-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br><span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
+      <span class="print-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br>${escapeHtml(copy.holding_institution_name || "Aufbewahrungsort nicht angegeben")} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
       </button></div>`;
   }).join("");
 }
@@ -209,16 +236,25 @@ function render({ fit = false, list = true } = {}) {
   renderMap({ fit });
 }
 
-function stationTime(station) {
-  if (station.station_type === "current_holding") return `Stand ${station.observation_date || CURRENT_YEAR}`;
+function historicalStationTime(station) {
   if (station.time_start && station.time_end && station.time_start !== station.time_end) return `${station.time_start}–${station.time_end}`;
   return station.time_start || station.time_end || "nicht datiert";
+}
+
+function stationTime(station) {
+  if (station.station_type === "current_holding") {
+    const current = `Stand ${station.observation_date || CURRENT_YEAR}`;
+    if (!station.mergedProvenance) return current;
+    const historical = historicalStationTime(station.mergedProvenance);
+    return historical === "nicht datiert" ? current : `als Bibliotheksstation ${historical}; ${current}`;
+  }
+  return historicalStationTime(station);
 }
 
 function openDetail(copyId) {
   const copy = state.copies.find(item => item.copy_id === copyId);
   if (!copy) return;
-  const stations = copyStations(copyId);
+  const stations = compactStationsForDisplay(copyId);
   const print = printStation(copyId);
   els["detail-content"].innerHTML = `
     <h2 id="detail-title">${escapeHtml(copy.title || "Ohne Titel")}</h2>
@@ -237,6 +273,7 @@ function openDetail(copyId) {
         <span class="station-place">${escapeHtml(station.location_label || station.place_name || "Ort nicht angegeben")}</span>
         <span class="station-time">${escapeHtml(stationTime(station))}</span>
         ${unresolved ? `<span class="uncertain-badge">${escapeHtml(unresolved)}</span>` : ""}
+        ${station.mergedProvenance ? `<span class="station-note">Orts- und Institutionsangabe aus zwei aufeinanderfolgenden MEI-Stationen zusammengeführt.</span>` : ""}
         ${station.location_resolution_note ? `<span class="station-note">${escapeHtml(station.location_resolution_note)}</span>` : ""}
         ${station.source_url ? `<a class="station-source" href="${escapeHtml(station.source_url)}" target="_blank" rel="noopener">Quelle: ${escapeHtml(station.source_catalogue)}</a>` : ""}
       </li>`;

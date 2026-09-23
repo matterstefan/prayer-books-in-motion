@@ -27,3 +27,22 @@ This log documents the development of *Prayer Books in Motion*, including techni
 - Review the existing supplementary corpus table.
 - Define the relationships between GW editions, ISTC records and MEI copies.
 - Plan a documented consultation with members of the PRAYTICIPATE Action.
+
+23 September 2026 — Clarification of GW data reuse
+
+Project phase: Preparatory work before the official VMG period
+Time spent: approximately 15 minutes
+
+Work completed
+Contacted Falk Eisermann, head of the Gesamtkatalog der Wiegendrucke (GW), to clarify whether GW data may be reused for the project.
+Received written confirmation that the scientific reuse, aggregation, and visualisation of GW data for Prayer Books in Motion does not present a copyright problem.
+The technical question concerning available interfaces, export formats, or other forms of structured data access was forwarded to Oliver Duntze.
+Decisions
+The existing GW corpus tables will remain the provisional working basis until further information about structured data access is available.
+Development of the MEI workflow and data model can continue independently of the pending technical response.
+GW will be cited transparently as the source of the bibliographical data.
+The private correspondence itself will not be published in the repository; only its implications for the project are documented here.
+Next steps
+Await technical information about GW interfaces or export formats.
+Create a data dictionary for the current corpus and MEI tables.
+Extend the exploratory MEI retrieval to a larger pilot sample before processing the complete corpus.

@@ -106,6 +106,68 @@ inspection and later visualization.
 
 ## Next technical step
 
-The tables should first be inspected for field coverage, unclear code values,
-and edge cases. Only then should the retrieval be extended from the six test
-identifiers to the complete corpus.
+The first six identifiers established that the API response and table model
+can preserve direct and `bound_with` relationships. The next stage is a
+deliberately heterogeneous pilot of 60 ISTC identifiers rather than an
+immediate complete-corpus retrieval.
+
+The reproducible selection is generated with:
+
+```bash
+python3 scripts/select_mei_pilot.py
+```
+
+This writes `data/sample/mei-pilot-istc.csv`. The selection contains 45 ISTC
+identifiers from the *Horae* source table and 15 from the supplementary prayer-
+book table. It retains all six identifiers from the first test, covers broad
+date bands, and favours a range of extracted printing places and language
+statements. It is a data-model stress test, not a statistically representative
+sample of incunable prayer books.
+
+Validate the selection without making a network request:
+
+```bash
+python3 scripts/fetch_mei_pilot.py --check
+```
+
+Run the complete pilot retrieval with:
+
+```bash
+python3 scripts/fetch_mei_pilot.py
+```
+
+The retrieval script requests each ISTC identifier separately, follows the
+MEI search API's paginated result set, and stores each completed query in the
+ignored directory `data/cache/mei-pilot/`. An interrupted run can therefore be
+continued without repeating completed requests. The combined, reviewable
+snapshot is written to `data/sample/mei-pilot.json` only after all 60 queries
+have completed.
+
+After retrieval, the pilot should be transformed into linked tables and
+inspected for field coverage, unclear code values, composite-volume cases, and
+other edge cases. Only then should processing be extended to the complete
+corpus.
+
+## Result of the 60-ISTC pilot (23 September 2026)
+
+- All 60 queries completed and were combined in
+  `data/sample/mei-pilot.json`.
+- Twenty-six ISTC identifiers returned at least one MEI relationship; 34
+  returned no current MEI hit.
+- The queries reported 88 hits in total. Two full-text search results did not
+  match either `hostItemId` or a `boundWith` ISTC identifier and were discarded
+  as unrelated, with that decision recorded in the query metadata.
+- The retained data contain 86 distinct MEI copy records and 86 ISTC–MEI
+  relationships: 74 `direct` and 12 `bound_with`.
+- The copy records contain 250 provenance blocks, 163 place occurrences, and
+  236 agent occurrences.
+- Of the 163 place occurrences, 155 contain coordinates.
+- Twenty retained MEI records contain at least one `boundWith` entry.
+- The current holding institutions represented in the pilot comprise 36
+  distinct MEI institution identifiers.
+
+The high number of zero-result queries confirms that the absence of an MEI
+hit must remain visible and must not be interpreted as evidence that no copy
+of an edition survives. At the same time, the 86 retained records provide a
+substantially broader basis for testing the transformation and itinerary model
+than the initial six-ISTC sample.

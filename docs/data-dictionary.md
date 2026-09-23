@@ -1,0 +1,307 @@
+# Data dictionary
+
+## Purpose
+
+This document describes the tabular data used in *Prayer Books in Motion*.
+It records the meaning and origin of the fields, the relationships between the
+tables, and the conventions used by the project. It is not a replacement for
+the documentation of GW, ISTC, or MEI.
+
+The project reuses existing catalogue data. Catalogue-native identifiers,
+titles, names, code values, and uncertainty are preserved wherever possible.
+Empty values are not completed by inference.
+
+## Data levels and table relationships
+
+| Data level | Main table | Primary identifier | Description |
+|---|---|---|---|
+| GW edition | `prayer-book-corpus.csv` | `gw_id` | One selected bibliographical record in GW |
+| GW–ISTC link | `gw-istc-links.csv` | `gw_id` + `istc_id` | Relationship between a GW edition and an ISTC record |
+| MEI copy | `mei-copies.csv` | `mei_id` | One copy-specific record returned by MEI |
+| ISTC–MEI link | `mei-record-links.csv` | `relationship_id` | Direct or `bound_with` relationship found by the MEI query |
+| Provenance block | `mei-provenance.csv` | `provenance_id` | One provenance block within an MEI copy record |
+| Place occurrence | `mei-places.csv` | `place_occurrence_id` | One place named within a provenance block |
+
+The principal chain is:
+
+`gw_id` → `istc_id` → `mei_id` → `provenance_id` → `place_occurrence_id`
+
+These relationships are not assumed to be one-to-one. One GW record may be
+linked to more than one ISTC record; one ISTC record may have many MEI copies;
+and one MEI copy may contain many provenance blocks and place occurrences.
+
+## General conventions
+
+| Convention | Meaning |
+|---|---|
+| UTF-8 | Character encoding used for all CSV and JSON files |
+| Empty cell | No value was supplied or extracted; it does not mean that the value is known not to exist |
+| Vertical bar (`\|`) | Separator used for multiple values within a readable CSV field |
+| JSON in a CSV cell | Used where the association between several nested attributes must be preserved |
+| Identifiers as text | Leading zeroes in identifiers such as `00559196` and `02007` are significant and must be retained |
+| Dates | Source values or cautiously extracted year ranges; missing precision is not silently increased |
+| Generated identifiers | Project-created technical keys used to link tables; they are not catalogue identifiers |
+
+The complete MEI response is retained in `data/sample/mei-api-sample.json`.
+The derived CSV files are reproducible analytical views of that source.
+
+## GW corpus source tables
+
+The files `data/corpus/horae-gw-corpus.csv` and
+`data/corpus/supplementary-gw-corpus.csv` have the same structure. The first
+contains records selected through the GW heading *Horae*. The second contains
+prayer books recorded under other GW titles. This distinction records how the
+working corpus was assembled; it is not a new classification of the works.
+
+| Field | Source | Description |
+|---|---|---|
+| `gw_id` | GW | GW identifier for the edition; stored as text |
+| `gw_title` | GW | Short title transcribed from the GW record |
+| `gw_heading` | GW | Fuller heading containing the bibliographical statement used during extraction |
+| `print_place_gw` | Derived from GW heading | Printing place extracted without modernising the GW wording |
+| `year_from` | Derived from GW heading | Earliest year represented by the present extraction |
+| `year_to` | Derived from GW heading | Latest year represented by the present extraction |
+| `language_statement_gw_title` | Derived from GW title | Language statement where it could be obtained from the title wording |
+| `istc_id` | GW link to ISTC | One or more ISTC identifiers; multiple identifiers are separated by semicolons in the source table |
+| `gw_url` | Project-generated from GW identifier | Link to the corresponding GW record |
+| `istc_url` | Project-generated from ISTC identifier | Link to the corresponding ISTC record; empty if no link was found |
+| `technical_note` | Project-generated | Extraction note, for example that no ISTC link was found |
+
+The current year extraction is deliberately provisional. Bracketed and
+qualified forms such as `14[74]`, `[um 1495]`, `nach 1500(?)`, or date ranges
+require further review. The numeric fields facilitate exploration but must not
+be treated as more precise than the `gw_heading` from which they were derived.
+
+## `data/derived/prayer-book-corpus.csv`
+
+This table combines the two GW corpus source tables. It contains one row per
+selected GW edition.
+
+All fields are described above. The additional field is:
+
+| Field | Source | Description |
+|---|---|---|
+| `corpus_file` | Project-generated | Filename of the source corpus table from which the row originated |
+
+## `data/derived/gw-istc-links.csv`
+
+This is a technical link table with one row per GW–ISTC relationship. It avoids
+assuming that every GW record has exactly one ISTC identifier.
+
+| Field | Source | Description |
+|---|---|---|
+| `gw_id` | GW corpus table | GW edition identifier |
+| `istc_id` | GW/ISTC link | ISTC edition identifier |
+| `corpus_file` | Project-generated | Source corpus filename |
+| `gw_url` | Project-generated | Link to the GW record |
+| `istc_url` | Project-generated | Link to the ISTC record |
+
+## `data/derived/mei-copies.csv`
+
+This table contains one row per retained MEI record. MEI records are
+copy-specific, whereas the related GW and ISTC records describe editions.
+
+### Identifiers and relationships
+
+| Field | Source | Description |
+|---|---|---|
+| `mei_id` | MEI `id` | Identifier of the retained MEI record; primary key of this table |
+| `copy_id` | MEI `copyId` | Copy identifier supplied by MEI |
+| `mei_url` | Project-generated | Link to the MEI record |
+| `host_istc_id` | MEI `hostItemId` | ISTC identifier of the edition described as the record's host item |
+| `requested_istc_ids` | Derived from query relationships | ISTC identifier or identifiers through which the record was retrieved |
+| `relationship_types` | Derived from query relationships | `direct`, `bound_with`, or both |
+
+### Current holding information
+
+| Field | Source | Description |
+|---|---|---|
+| `holding_institution_id` | MEI | MEI/CERL identifier for the present holding institution |
+| `holding_institution_name` | MEI | Full name of the present holding institution |
+| `holding_institution_short` | MEI | Short form of the institution name |
+| `holding_country_code` | MEI | Country code supplied for the institution |
+| `holding_collection` | MEI | Collection name or code, where supplied |
+| `shelfmark` | MEI | Present shelfmark of the copy record |
+
+### Bibliographical and copy information
+
+| Field | Source | Description |
+|---|---|---|
+| `title` | MEI `hostItem` | Title of the edition |
+| `author` | MEI `hostItem` | Author statement, where supplied |
+| `imprint` | MEI `hostItem` | Imprint statement, including place, printer, and date where available |
+| `imprint_country_code` | MEI `hostItem` | Country code associated with the imprint |
+| `language` | MEI `hostItem` | Language code or codes |
+| `format` | MEI `hostItem` | Bibliographical format |
+| `subject` | MEI `hostItem` | Subject value supplied by the catalogue |
+| `gw_references` | Derived from MEI references | References beginning with `GW` |
+| `all_references` | MEI `hostItem.references` | All bibliographical references, separated by `\|` |
+| `general_notes` | MEI | General copy or record notes, separated by `\|` |
+| `description_language` | MEI | Language in which the MEI record is described |
+| `completeness` | MEI | Completeness value supplied by MEI |
+| `copy_type` | MEI | Copy-type value supplied by MEI |
+| `copy_features` | MEI | Copy features supplied by MEI |
+| `other_identifier` | MEI | Additional identifiers supplied by MEI |
+| `physical_description_note` | MEI | Free-text physical description |
+
+### Counts and retrieval metadata
+
+| Field | Source | Description |
+|---|---|---|
+| `provenance_count` | Project-generated | Number of provenance blocks in the retained MEI record |
+| `bound_with_count` | Project-generated | Number of `boundWith` components listed in the MEI record |
+| `source_retrieved_at` | Retrieval metadata | Date and time at which the source response was retrieved |
+| `source_endpoint` | Retrieval metadata | MEI API endpoint used for the query |
+
+## `data/derived/mei-record-links.csv`
+
+This technical table records why each MEI record was retained. It is essential
+for composite volumes because a query can find an ISTC identifier either as
+the host item of an MEI record or as another component named in `boundWith`.
+
+| Field | Source | Description |
+|---|---|---|
+| `relationship_id` | Project-generated | Unique row identifier such as `r001` |
+| `requested_istc_id` | Query input | ISTC identifier being searched |
+| `relation_type` | Project-generated from MEI structure | `direct` if it matches `hostItemId`; `bound_with` if it occurs in `boundWith` |
+| `mei_id` | MEI | Identifier of the returned MEI record |
+| `host_istc_id` | MEI | ISTC identifier of the record's host item |
+| `linked_copy_id` | MEI | Copy identifier of the requested bound component where MEI supplies one; it may be empty |
+| `holding_institution_id` | MEI | Identifier of the present holding institution of the returned record |
+| `shelfmark` | MEI | Shelfmark attached to the returned record |
+
+A `bound_with` relationship demonstrates a material or catalogued association.
+It does not by itself prove that every provenance statement in the returned
+record applies to every component of the composite volume.
+
+## `data/derived/mei-provenance.csv`
+
+This table contains one row per provenance block in an MEI copy record.
+Provenance blocks are retained in their source order. A block may refer to an
+owner, institution, transaction, binding, decoration, annotation, or another
+kind of material evidence. It must not automatically be interpreted as a
+fully dated movement event.
+
+### Keys, order, and dates
+
+| Field | Source | Description |
+|---|---|---|
+| `provenance_id` | Project-generated | Stable key formed from `mei_id` and the block sequence, for example `00559196-p001` |
+| `mei_id` | MEI | Foreign key to `mei-copies.csv` |
+| `provenance_sequence` | Project-generated | Position of the provenance block in the MEI source array |
+| `time_start` | MEI `timeperiod.start` | Beginning of the supplied time period |
+| `time_end` | MEI `timeperiod.end` | End of the supplied time period |
+| `centuries` | MEI `timeperiod.century` | Century values supplied by MEI, separated by `\|` |
+| `certainty` | MEI | Catalogue code for the certainty of the statement; retained without reinterpretation |
+| `provenance_types` | MEI `type` | One or more MEI provenance-type codes |
+| `source_codes` | MEI `source` | One or more MEI evidence-source codes |
+| `acquisition_method` | MEI | MEI code for the acquisition method |
+| `evidence_date` | MEI | Free-text or coded date attached to the evidence rather than the general provenance period |
+
+The meaning of catalogue codes such as `a`, `b`, `l`, or `R390` must be taken
+from the relevant MEI/CERL controlled vocabulary. Until that documentation has
+been checked, the project preserves the codes but does not expand them into
+new labels.
+
+### Notes, areas, agents, and places
+
+| Field | Source | Description |
+|---|---|---|
+| `note` | MEI | General free-text note for the provenance block |
+| `area_codes` | MEI `area` | Geographic area codes supplied by MEI |
+| `agent_count` | Project-generated | Number of agents within the provenance block |
+| `agent_names` | MEI | Agent names, separated by `\|` |
+| `agent_owner_ids` | MEI `ownerId` | MEI owner identifiers, separated by `\|` |
+| `agent_roles` | MEI | Agent-role codes, separated by `\|` |
+| `agent_types` | MEI | Agent types such as person or corporate body |
+| `agent_dates` | MEI | Dates associated with the agents |
+| `agent_external_ids` | MEI | External authority identifiers or links, including CERL and GND where supplied |
+| `agents_json` | MEI, structurally preserved | Complete agent objects as compact JSON, retaining the association between each name, role, date, type, and identifier |
+| `place_count` | Project-generated | Number of place occurrences in the provenance block |
+
+The readable aggregate agent columns are convenient for inspection. When the
+attributes of a particular agent must be associated reliably, `agents_json`
+is authoritative because parallel lists in separate CSV cells can be
+ambiguous.
+
+### Material evidence
+
+| Field | Source | Description |
+|---|---|---|
+| `binding_note` | MEI | Free-text note concerning the binding |
+| `binding_date` | MEI | Catalogue code or value for the binding date |
+| `binding_type` | MEI | Catalogue code for binding type |
+| `binding_status` | MEI | Catalogue code for binding status |
+| `cover_material` | MEI | Catalogue code for cover material |
+| `board_material` | MEI | Catalogue code for board material |
+| `binding_height` | MEI | Binding height as supplied by MEI |
+| `binding_width` | MEI | Binding width as supplied by MEI |
+| `binding_depth` | MEI | Binding depth as supplied by MEI |
+| `decoration_note` | MEI | Free-text note concerning decoration |
+| `rubrication_note` | MEI | Free-text note concerning rubrication |
+| `rubrication_date` | MEI | Date or period associated with rubrication |
+| `manuscript_note` | MEI `msNote` | Free-text note concerning manuscript additions or annotations |
+| `stamps_note` | MEI | One or more notes concerning stamps |
+| `shelfmark_evidence` | MEI | Historical shelfmark evidence preserved as JSON |
+| `price_amount` | MEI | Recorded price amount |
+| `price_currency` | MEI | Currency code or statement |
+| `price_note` | MEI | Free-text note concerning price |
+| `additional_evidence_json` | MEI, structurally preserved | Less common evidence fields not assigned a separate CSV column; stored as compact JSON rather than discarded |
+
+Measurements and code values are retained as supplied. Units or expanded code
+labels must not be inferred unless they are documented by the source system.
+
+## `data/derived/mei-places.csv`
+
+This table contains one row for every place object within a provenance block.
+It represents the occurrence of a place in the source data, not yet a proven
+stop in a chronologically ordered itinerary.
+
+| Field | Source | Description |
+|---|---|---|
+| `place_occurrence_id` | Project-generated | Unique key formed from provenance identifier and place sequence |
+| `provenance_id` | Project-generated | Foreign key to `mei-provenance.csv` |
+| `mei_id` | MEI | Foreign key to `mei-copies.csv` |
+| `place_sequence` | Project-generated | Position of the place within the provenance block |
+| `name` | MEI | Place name occurring in the record |
+| `preferred_placename` | MEI | Preferred place name supplied by MEI/GeoNames |
+| `geonames_id` | MEI | GeoNames authority identifier |
+| `geonames_url` | Project-generated | Link formed from the GeoNames identifier |
+| `latitude` | Derived from MEI `location` | Latitude supplied by the source |
+| `longitude` | Derived from MEI `location` | Longitude supplied by the source |
+| `country` | MEI | Country name supplied for the place |
+| `variant_placenames` | MEI | Variant names, separated by `\|` |
+| `variant_placename_count` | Project-generated | Number of variant names in the source object |
+| `place_note` | MEI | Free-text note attached to the place, where supplied |
+
+Coordinates are reused as supplied. They identify the referenced place but do
+not necessarily locate a specific historical building or the exact place at
+which the evidence was created.
+
+## Source data and project-generated interpretation
+
+The present tables contain source data and technical transformations, but they
+do not yet contain reconstructed itineraries. A later itinerary table will
+have to distinguish at least:
+
+- the edition's printing place, used as the initial known place;
+- places explicitly associated with provenance evidence;
+- the copy's present holding institution;
+- exact, approximate, overlapping, and absent dates;
+- source order from chronological order;
+- component-specific evidence from evidence applying to a composite volume.
+
+Any such itinerary will be a project-generated interpretative layer and must
+retain links back to the source records and provenance blocks.
+
+## Updating the tables
+
+- GW source tables are the input for `scripts/build_corpus.py`.
+- `prayer-book-corpus.csv` and `gw-istc-links.csv` must be regenerated after a
+  deliberate change to the GW source tables.
+- The MEI JSON file records one retrieval snapshot and should not be overwritten
+  casually.
+- The MEI CSV tables must be regenerated with
+  `scripts/transform_mei_sample.py` after the corresponding JSON snapshot is
+  intentionally refreshed.
+- Generated CSV files should not be edited manually.

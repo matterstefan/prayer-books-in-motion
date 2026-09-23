@@ -74,6 +74,21 @@ rather than supplying guessed coordinates. Its time fields contain catalogue
 evidence only; the year-by-year state used by a time slider is calculated in
 the interface and is documented in `docs/itinerary-data-model.md`.
 
+## Resolved station coordinates
+
+The curated crosswalk `data/authority/place-authorities.csv` resolves printing
+places, present holding institutions, and previously uncoordinated provenance
+places at city or locality level. Apply it with:
+
+```bash
+python3 scripts/resolve_station_locations.py
+```
+
+This creates `mei-itinerary-stations-resolved.csv`. In the current pilot, 276
+of 287 stations have point coordinates. The remaining eleven rows represent
+ambiguous, country-level, review-required, or non-geographic statements and
+are intentionally left without coordinates. See `docs/place-resolution.md`.
+
 GeoNames identifiers and coordinates are retained in `mei-places.csv`.
 MEI owner identifiers and external agent identifiers (including CERL and GND
 links where supplied by MEI) are retained in `mei-provenance.csv`. The

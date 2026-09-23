@@ -94,6 +94,11 @@ but likewise still need to be resolved to map coordinates. The field
 Geocoding should be added as a reproducible authority-mapping step. Coordinates
 must not be guessed from free-text strings in the browser.
 
+This step is implemented through `data/authority/place-authorities.csv` and
+`scripts/resolve_station_locations.py`. The resulting map-ready table is
+`data/derived/mei-itinerary-stations-resolved.csv`. The rules and intentionally
+unresolved cases are documented in `docs/place-resolution.md`.
+
 ## Composite volumes
 
 The itinerary table currently excludes records found only through
@@ -101,4 +106,3 @@ The itinerary table currently excludes records found only through
 prevents evidence attached to the host volume from being applied automatically
 to every component. Such cases can later be included with an explicit evidence
 scope such as component-specific, binding-level, or uncertain.
-

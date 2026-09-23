@@ -208,7 +208,8 @@ The first itinerary station table follows these rules:
    contain fewer stations.
 
 These rules are implemented in `data/derived/mei-itinerary-stations.csv` and
-documented in `docs/itinerary-data-model.md`. The pilot is large enough to
-proceed to endpoint geocoding and a first map prototype. It also shows that a
-visually complete route cannot be produced for every copy without making
-unsupported assumptions.
+documented in `docs/itinerary-data-model.md`. The reviewed place crosswalk and
+map-ready table now resolve 276 of 287 station rows to point coordinates. The
+pilot is therefore large enough to proceed to a first map prototype. It also
+shows that a visually complete route cannot be produced for every copy without
+making unsupported assumptions.

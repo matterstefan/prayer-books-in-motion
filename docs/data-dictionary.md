@@ -22,6 +22,8 @@ Empty values are not completed by inference.
 | Provenance block | `mei-provenance.csv` | `provenance_id` | One provenance block within an MEI copy record |
 | Place occurrence | `mei-places.csv` | `place_occurrence_id` | One place named within a provenance block |
 | Itinerary station | `mei-itinerary-stations.csv` | `station_id` | One printing, provenance, or current-holding station assembled for visualisation |
+| Place-authority mapping | `place-authorities.csv` | `mapping_id` | Reviewed mapping from catalogue wording or institution identifier to a map location or explicit unresolved status |
+| Resolved itinerary station | `mei-itinerary-stations-resolved.csv` | `station_id` | Itinerary station enriched through the curated place-authority crosswalk |
 
 The principal chain is:
 
@@ -364,6 +366,47 @@ The station table assembles catalogue evidence but does not reconstruct an
 unbroken historical route. Time-slider gap handling, ambiguity, and schematic
 line display are specified in `docs/itinerary-data-model.md`.
 
+## `data/authority/place-authorities.csv`
+
+This manually reviewed input table separates catalogue wording from the places
+used by the map. The main fields are:
+
+| Field | Description |
+|---|---|
+| `mapping_id` | Project identifier for the reviewed mapping |
+| `station_type`, `match_field`, `source_key` | Composite key used to join the mapping to a station |
+| `source_label`, `source_context_ids` | Original wording and the catalogue records in which it occurs |
+| `affected_station_count` | Number of current pilot rows expected to receive the mapping |
+| `resolved_name`, `resolution_level` | Controlled display name and spatial level |
+| `place_authority_id`, `place_authority_url` | GeoNames identifier and link where a point has been resolved |
+| `place_wikidata_id` | Wikidata identifier for the place where checked |
+| `institution_wikidata_id` | Wikidata identifier for a holding institution supplied through CERL where available |
+| `latitude`, `longitude` | WGS84 point coordinates; empty for unresolved mappings |
+| `resolution_status` | `resolved`, `ambiguous`, `country_only`, `needs_review`, or `non_geographic` |
+| `resolution_method`, `source_record_url`, `resolution_note` | Audit trail and explanation of the decision |
+
+The table is curated data and must not be replaced by unrestricted automatic
+geocoding. Its methodology is described in `docs/place-resolution.md`.
+
+## `data/derived/mei-itinerary-stations-resolved.csv`
+
+This table contains all columns from `mei-itinerary-stations.csv`. Resolved
+mappings fill the place authority, preferred name, and coordinates without
+changing `location_label`, which retains the catalogue-facing wording. The
+following fields are added:
+
+| Field | Description |
+|---|---|
+| `location_mapping_id` | Foreign key to `place-authorities.csv` |
+| `resolved_country_code` | Normalised country code supplied by the mapping |
+| `place_wikidata_id` | Optional Wikidata identifier for the mapped place |
+| `institution_wikidata_id` | Optional Wikidata identifier for the holding institution |
+| `location_resolution_method` | Method used to select the mapping |
+| `location_resolution_note` | Explanation or warning copied from the crosswalk |
+
+Rows without point coordinates remain in the table and are never silently
+dropped.
+
 ## Updating the tables
 
 - GW source tables are the input for `scripts/build_corpus.py`.
@@ -376,4 +419,9 @@ line display are specified in `docs/itinerary-data-model.md`.
   intentionally refreshed.
 - `mei-itinerary-stations.csv` must then be regenerated with
   `scripts/build_itinerary_stations.py`.
-- Generated CSV files should not be edited manually.
+- Review `data/authority/place-authorities.csv` for new station keys, then
+  regenerate `mei-itinerary-stations-resolved.csv` with
+  `scripts/resolve_station_locations.py`.
+- Generated CSV files in `data/derived/` should not be edited manually.
+  `data/authority/place-authorities.csv` is a curated input table and may be
+  revised when a documented place identification changes.

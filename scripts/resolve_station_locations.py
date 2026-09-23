@@ -43,21 +43,42 @@ def station_key(row: dict[str, str]) -> tuple[str, str] | None:
         return "print_place", row["place_name"]
     if row["station_type"] == "current_holding":
         return "current_holding", row["institution_id"]
-    if row["station_type"] == "provenance_place" and not (
-        row["latitude"] and row["longitude"]
-    ):
+    if row["station_type"] == "provenance_place":
         return "provenance_place", row["place_name"]
     return None
+
+
+def mapping_context(mapping: dict[str, str]) -> tuple[str, str] | None:
+    """Return an optional station-field/value pair used to disambiguate a label."""
+    field = (mapping.get("match_context_field") or "").strip()
+    value = (mapping.get("match_context_key") or "").strip()
+    if bool(field) != bool(value):
+        raise ValueError(
+            f"Mapping {mapping['mapping_id']} must supply both match_context_field "
+            "and match_context_key"
+        )
+    return (field, value) if field else None
+
+
+def applies_to_existing_coordinates(mapping: dict[str, str]) -> bool:
+    return (mapping.get("apply_to_existing_coordinates") or "").strip().lower() == "true"
 
 
 def main() -> None:
     source_columns, station_rows = read_csv(SOURCE_PATH)
     _, mapping_rows = read_csv(MAPPING_PATH)
-    mappings = {
-        (row["station_type"], row["source_key"]): row for row in mapping_rows
-    }
-    if len(mappings) != len(mapping_rows):
-        raise ValueError("Duplicate station_type/source_key mapping found")
+    mappings: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for mapping in mapping_rows:
+        key = (mapping["station_type"], mapping["source_key"])
+        mappings.setdefault(key, []).append(mapping)
+
+    for key, candidates in mappings.items():
+        seen_contexts: set[tuple[str, str] | None] = set()
+        for candidate in candidates:
+            context = mapping_context(candidate)
+            if context in seen_contexts:
+                raise ValueError(f"Duplicate mapping for {key} with context {context}")
+            seen_contexts.add(context)
 
     applied = Counter()
     output: list[dict[str, str]] = []
@@ -68,9 +89,33 @@ def main() -> None:
 
         key = station_key(row)
         if key is not None:
-            if key not in mappings:
+            candidates = mappings.get(key, [])
+            if row["latitude"] and row["longitude"]:
+                candidates = [
+                    candidate
+                    for candidate in candidates
+                    if applies_to_existing_coordinates(candidate)
+                ]
+            specific = []
+            generic = []
+            for candidate in candidates:
+                context = mapping_context(candidate)
+                if context is None:
+                    generic.append(candidate)
+                elif row.get(context[0], "") == context[1]:
+                    specific.append(candidate)
+
+            if not candidates and row["latitude"] and row["longitude"]:
+                output.append(row)
+                continue
+            if len(specific) > 1 or (not specific and len(generic) > 1):
+                raise ValueError(f"Ambiguous location mapping found for station {row['station_id']}")
+            if specific:
+                mapping = specific[0]
+            elif generic:
+                mapping = generic[0]
+            else:
                 raise ValueError(f"No location mapping found for {key}")
-            mapping = mappings[key]
             applied[mapping["mapping_id"]] += 1
 
             row["location_mapping_id"] = mapping["mapping_id"]

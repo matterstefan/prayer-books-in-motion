@@ -4,12 +4,22 @@
 the city-level locations used by the map. It is an input to the visualisation
 workflow and should not be overwritten automatically.
 
+The optional trailing columns `match_context_field` and `match_context_key`
+make a mapping source-record-specific. They are used when identical wording
+can refer to different places in different editions or provenance records. A
+context-specific mapping takes precedence over a generic mapping.
+
+`apply_to_existing_coordinates=true` marks a reviewed correction or
+normalisation of coordinates already supplied by MEI. The source snapshot is
+left unchanged; only the analytical map layer is updated.
+
 The table currently covers:
 
 - every distinct printing-place statement in the 60-ISTC pilot;
 - every present holding-institution identifier among direct MEI records;
 - every MEI provenance-place occurrence that lacked coordinates in the source
-  snapshot.
+  snapshot;
+- reviewed corrections or normalisations of MEI-supplied points where needed.
 
 Resolved rows use GeoNames WGS84 point coordinates. Present holding
 institutions are mapped to their cities, not to exact building coordinates.
@@ -23,8 +33,8 @@ Apply the current crosswalk from the repository root with:
 
 ```bash
 python3 scripts/resolve_station_locations.py
+python3 scripts/validate_place_resolution.py
 ```
 
 This creates `data/derived/mei-itinerary-stations-resolved.csv`. When the source
 corpus changes, add or revise crosswalk rows before running the script again.
-

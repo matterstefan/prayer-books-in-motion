@@ -1,0 +1,46 @@
+name: Harvest MEI corpus
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harvest-mei-corpus
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v6
+      - name: Restore completed MEI queries
+        uses: actions/cache/restore@v6
+        with:
+          path: data/cache/mei-corpus
+          key: mei-corpus-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: mei-corpus-v1-
+      - name: Build selection from source tables
+        run: python3 scripts/build_corpus.py
+      - name: Fetch and transform corpus
+        run: timeout --signal=INT --kill-after=60s 80m python3 -u scripts/fetch_mei_corpus.py --seed-pilot
+      - name: Save completed queries, including after a partial run
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: data/cache/mei-corpus
+          key: mei-corpus-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Make results and checkpoints downloadable
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mei-corpus-results
+          path: |
+            data/expanded/
+            data/cache/mei-corpus/
+            data/derived/gw-istc-links.csv
+            data/derived/prayer-book-corpus.csv
+          retention-days: 90
+          if-no-files-found: error

@@ -132,6 +132,8 @@ def fetch_complete_query(
 
     while reported_hits is None or offset < reported_hits:
         response = request_page(istc_id, offset, page_size, limiter)
+        if not isinstance(response, dict) or "hits" not in response or "rows" not in response:
+            raise ValueError(f"MEI response lacks search-result fields for {istc_id}")
         page_hits = hits_value(response)
         if reported_hits is None:
             reported_hits = page_hits

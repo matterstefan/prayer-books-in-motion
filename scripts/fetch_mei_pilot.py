@@ -98,14 +98,29 @@ def request_page(
     )
     request = Request(
         f"{API_ENDPOINT}?{parameters}",
-        headers={"User-Agent": "prayer-books-in-motion scientific data reuse"},
+        headers={
+            "User-Agent": "prayer-books-in-motion scientific data reuse",
+            "Accept": "application/json",
+        },
     )
 
     for attempt in range(1, retries + 1):
         limiter.wait()
         try:
             with urlopen(request, timeout=60) as response:
-                return json.load(response)
+                raw = response.read()
+                try:
+                    return json.loads(raw)
+                except (json.JSONDecodeError, UnicodeDecodeError) as error:
+                    preview = " ".join(raw[:600].decode("utf-8", errors="replace").split())
+                    raise ValueError(
+                        f"MEI returned non-JSON content for {istc_id}; "
+                        f"HTTP {response.status}; "
+                        f"Content-Type: {response.headers.get('Content-Type', '(missing)')}; "
+                        f"URL: {response.geturl()}; "
+                        f"bytes: {len(raw)}; "
+                        f"response beginning: {preview or '(empty response)'}"
+                    ) from error
         except HTTPError as error:
             if error.code not in RETRYABLE_HTTP_CODES or attempt == retries:
                 raise

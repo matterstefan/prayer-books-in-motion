@@ -2,6 +2,14 @@ name: Harvest MEI corpus
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Test access first, then choose full for the corpus'
+        type: choice
+        default: test
+        options:
+          - test
+          - full
 
 permissions:
   contents: read
@@ -25,7 +33,18 @@ jobs:
       - name: Build selection from source tables
         run: python3 scripts/build_corpus.py
       - name: Fetch and transform corpus
-        run: timeout --signal=INT --kill-after=60s 80m python3 -u scripts/fetch_mei_corpus.py --seed-pilot
+        env:
+          CERL_USER_AGENT: ${{ secrets.CERL_USER_AGENT }}
+          HARVEST_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$HARVEST_MODE" = "test" ]; then
+            python3 -u scripts/fetch_mei_corpus.py --smoke-test
+          elif [ "$HARVEST_MODE" = "full" ]; then
+            timeout --signal=INT --kill-after=60s 80m python3 -u scripts/fetch_mei_corpus.py --seed-pilot
+          else
+            echo "Choose test or full."
+            exit 1
+          fi
       - name: Save completed queries, including after a partial run
         if: always()
         uses: actions/cache/save@v6

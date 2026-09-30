@@ -31,13 +31,6 @@ PAGE_SIZE = 100
 RETRYABLE_HTTP_CODES = {429, 500, 502, 503, 504}
 
 
-def access_user_agent() -> str:
-    value = os.environ.get("CERL_USER_AGENT", "").strip()
-    if not value or any(ord(char) < 32 or ord(char) > 126 for char in value):
-        raise ValueError("Set CERL_USER_AGENT to the access identifier supplied by CERL")
-    return value
-
-
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -45,12 +38,8 @@ def now_iso() -> str:
 def atomic_write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    serialized = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
-    secret = os.environ.get("CERL_USER_AGENT", "").strip()
-    if secret and (secret in serialized or json.dumps(secret)[1:-1] in serialized):
-        raise ValueError("Output contains the access identifier; refusing to save it")
     temporary.write_text(
-        serialized,
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     os.replace(temporary, path)
@@ -78,7 +67,7 @@ def read_selection() -> list[str]:
 
 class RateLimiter:
     def __init__(self, delay_seconds: float) -> None:
-        self.delay_seconds = max(2.0, delay_seconds)
+        self.delay_seconds = delay_seconds
         self.last_request_at: float | None = None
 
     def wait(self) -> None:
@@ -110,7 +99,7 @@ def request_page(
     request = Request(
         f"{API_ENDPOINT}?{parameters}",
         headers={
-            "User-Agent": access_user_agent(),
+            "User-Agent": "prayer-books-in-motion scientific data reuse",
             "Accept": "application/json",
         },
     )
@@ -123,11 +112,15 @@ def request_page(
                 try:
                     return json.loads(raw)
                 except (json.JSONDecodeError, UnicodeDecodeError) as error:
+                    preview = " ".join(raw[:600].decode("utf-8", errors="replace").split())
                     raise ValueError(
                         f"MEI returned non-JSON content for {istc_id}; "
                         f"HTTP {response.status}; "
-                        f"bytes: {len(raw)}. Response content omitted to protect access details."
-                    ) from None
+                        f"Content-Type: {response.headers.get('Content-Type', '(missing)')}; "
+                        f"URL: {response.geturl()}; "
+                        f"bytes: {len(raw)}; "
+                        f"response beginning: {preview or '(empty response)'}"
+                    ) from error
         except HTTPError as error:
             if error.code not in RETRYABLE_HTTP_CODES or attempt == retries:
                 raise

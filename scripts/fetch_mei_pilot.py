@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Fetch the reproducible 60-ISTC pilot from the public CERL MEI API.
+"""Fetch and cache MEI records for the reproducible 60-ISTC pilot.
 
-Each ISTC query is cached separately so that an interrupted run can resume
-without repeating completed requests. Search results are paginated with the
-documented `offset` and `size` parameters. The combined JSON retains complete
-MEI records, query metadata, and separate direct/bound-with relationships.
+The CERL-approved User-Agent is read from CERL_USER_AGENT.
+Requests are spaced at least two seconds apart.
 """
 
 from __future__ import annotations
@@ -12,6 +10,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import os
 import time
 from datetime import datetime, timezone
@@ -35,22 +34,42 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def access_user_agent() -> str:
+    value = os.environ.get("CERL_USER_AGENT", "").strip()
+    if not value:
+        raise ValueError(
+            "CERL_USER_AGENT is missing. Configure the GitHub Actions secret "
+            "and pass it to the retrieval step as an environment variable."
+        )
+    if any(ord(character) < 32 or ord(character) > 126 for character in value):
+        raise ValueError(
+            "CERL_USER_AGENT must contain printable ASCII characters only."
+        )
+    return value
+
+
 def atomic_write_json(path: Path, value: Any) -> None:
+    serialized = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+    secret = os.environ.get("CERL_USER_AGENT", "").strip()
+    if secret:
+        escaped_secret = json.dumps(secret, ensure_ascii=False)[1:-1]
+        if secret in serialized or escaped_secret in serialized:
+            raise ValueError(
+                "Refusing to write output containing CERL access details."
+            )
+
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    temporary.write_text(serialized, encoding="utf-8")
     os.replace(temporary, path)
 
 
 def hits_value(response: dict[str, Any]) -> int:
-    hits = response.get("hits", 0)
+    hits = response.get("hits")
     if isinstance(hits, dict):
-        hits = hits.get("value", 0)
-    if not isinstance(hits, int):
-        raise ValueError(f"Unexpected MEI hits value: {hits!r}")
+        hits = hits.get("value")
+    if type(hits) is not int or hits < 0:
+        raise ValueError("MEI returned an invalid or missing hit count.")
     return hits
 
 
@@ -59,7 +78,9 @@ def read_selection() -> list[str]:
         rows = list(csv.DictReader(source))
     identifiers = [row["istc_id"].strip() for row in rows]
     if len(identifiers) != 60:
-        raise ValueError(f"Pilot selection must contain 60 rows, found {len(identifiers)}")
+        raise ValueError(
+            f"Pilot selection must contain 60 rows, found {len(identifiers)}"
+        )
     if "" in identifiers or len(set(identifiers)) != len(identifiers):
         raise ValueError("Pilot ISTC identifiers must be non-empty and unique")
     return identifiers
@@ -67,7 +88,9 @@ def read_selection() -> list[str]:
 
 class RateLimiter:
     def __init__(self, delay_seconds: float) -> None:
-        self.delay_seconds = delay_seconds
+        if not math.isfinite(delay_seconds) or delay_seconds < 0:
+            raise ValueError("Delay must be finite and non-negative")
+        self.delay_seconds = max(2.0, delay_seconds)
         self.last_request_at: float | None = None
 
     def wait(self) -> None:
@@ -99,7 +122,7 @@ def request_page(
     request = Request(
         f"{API_ENDPOINT}?{parameters}",
         headers={
-            "User-Agent": "prayer-books-in-motion scientific data reuse",
+            "User-Agent": access_user_agent(),
             "Accept": "application/json",
         },
     )
@@ -111,16 +134,12 @@ def request_page(
                 raw = response.read()
                 try:
                     return json.loads(raw)
-                except (json.JSONDecodeError, UnicodeDecodeError) as error:
-                    preview = " ".join(raw[:600].decode("utf-8", errors="replace").split())
+                except (json.JSONDecodeError, UnicodeDecodeError):
                     raise ValueError(
                         f"MEI returned non-JSON content for {istc_id}; "
-                        f"HTTP {response.status}; "
-                        f"Content-Type: {response.headers.get('Content-Type', '(missing)')}; "
-                        f"URL: {response.geturl()}; "
-                        f"bytes: {len(raw)}; "
-                        f"response beginning: {preview or '(empty response)'}"
-                    ) from error
+                        f"HTTP {response.status}; bytes: {len(raw)}. "
+                        "Response content omitted to protect access details."
+                    ) from None
         except HTTPError as error:
             if error.code not in RETRYABLE_HTTP_CODES or attempt == retries:
                 raise
@@ -147,9 +166,22 @@ def fetch_complete_query(
 
     while reported_hits is None or offset < reported_hits:
         response = request_page(istc_id, offset, page_size, limiter)
-        if not isinstance(response, dict) or "hits" not in response or "rows" not in response:
-            raise ValueError(f"MEI response lacks search-result fields for {istc_id}")
+
+        if not isinstance(response, dict):
+            raise ValueError(
+                f"MEI response is not a search-result object for {istc_id}"
+            )
+        if "hits" not in response:
+            raise ValueError(
+                f"MEI response lacks the 'hits' field for {istc_id}"
+            )
+
         page_hits = hits_value(response)
+        if "rows" not in response and page_hits != 0:
+            raise ValueError(
+                f"MEI reports hits but omits the 'rows' field for {istc_id}"
+            )
+
         if reported_hits is None:
             reported_hits = page_hits
         elif page_hits != reported_hits:
@@ -169,7 +201,9 @@ def fetch_complete_query(
 
         new_rows = 0
         for record in page_rows:
-            record_id = str(record.get("id", ""))
+            if not isinstance(record, dict):
+                raise ValueError(f"MEI result is not an object for {istc_id}")
+            record_id = str(record.get("id") or "")
             if not record_id:
                 raise ValueError(f"MEI result without id for {istc_id}")
             if record_id in seen_record_ids:
@@ -177,6 +211,7 @@ def fetch_complete_query(
             seen_record_ids.add(record_id)
             rows.append(record)
             new_rows += 1
+
         if page_rows and new_rows == 0:
             raise RuntimeError(
                 f"Pagination for {istc_id} made no progress at offset {offset}"
@@ -327,31 +362,32 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="validate and summarize the 60-row selection without network requests",
+        help="validate the 60-row selection without network requests",
     )
     parser.add_argument(
         "--refresh",
         action="store_true",
-        help="ignore the local cache and intentionally retrieve every query again",
+        help="ignore the local cache and retrieve every query again",
     )
     parser.add_argument(
         "--delay",
         type=float,
-        default=1.5,
-        help="minimum delay in seconds between API requests (default: 1.5)",
+        default=2.0,
+        help="delay between requests; minimum and default: 2 seconds",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     arguments = parse_arguments()
-    if arguments.delay < 0:
-        raise ValueError("Delay must not be negative")
+    if not math.isfinite(arguments.delay) or arguments.delay < 0:
+        raise ValueError("Delay must be finite and non-negative")
     identifiers = read_selection()
     print(f"Validated pilot selection: {len(identifiers)} unique ISTC identifiers")
     if arguments.check:
         return
 
+    access_user_agent()
     limiter = RateLimiter(arguments.delay)
     query_results: list[tuple[dict[str, Any], bool]] = []
     for position, istc_id in enumerate(identifiers, start=1):

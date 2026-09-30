@@ -78,6 +78,7 @@ def seed_from_pilot(cache, identifiers):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Inspect selection without fetching or writing')
+    parser.add_argument('--smoke-test', action='store_true', help='Test three live queries without publishing corpus data')
     parser.add_argument('--cache-only', action='store_true', help='Compile available checkpoints without network requests')
     parser.add_argument('--cache-dir', type=Path, default=ROOT / 'data/cache/mei-corpus')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'data/expanded')
@@ -90,6 +91,22 @@ def main():
     identifiers, plan = read_plan()
     print(json.dumps(plan, ensure_ascii=False, indent=2), flush=True)
     if args.check:
+        return 0
+    if not args.cache_only:
+        api.access_user_agent()
+    if args.smoke_test:
+        if args.cache_only:
+            parser.error('--smoke-test requires live access')
+        limiter = api.RateLimiter(args.delay)
+        checks = []
+        for identifier in identifiers[:3]:
+            result = api.fetch_complete_query(identifier, limiter)
+            validate_cached(result, identifier)
+            checks.append({'istc_id': identifier, 'reported_hits': result['reported_hits']})
+            print(f'Live query succeeded: {identifier}, {result["reported_hits"]} hits', flush=True)
+        api.atomic_write_json(args.output_dir / 'access-test.json',
+                              {'tested_at': api.now_iso(), 'successful': True, 'queries': checks})
+        print('Access test passed. The complete corpus has not been retrieved.')
         return 0
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     args.output_dir.mkdir(parents=True, exist_ok=True)

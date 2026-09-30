@@ -16,7 +16,9 @@ records. Original titles, identifiers, dates and uncertainty remain unchanged.
 
 ## Local use
 
-Requires Python 3.10 or later; no third-party packages or API credentials.
+Requires Python 3.10 or later; no third-party packages. Live requests require
+the CERL-supplied access identifier in the environment variable
+`CERL_USER_AGENT`. Keep its value out of source files, logs and commits.
 
 ```bash
 python3 scripts/build_corpus.py
@@ -76,6 +78,19 @@ omit `--seed-pilot`. Preserve the previous results for comparison.
 
 ## Run on GitHub
 
+Create a repository Actions secret named `CERL_USER_AGENT` containing only
+the exact User-Agent value supplied privately by CERL. The workflow passes
+it as an environment variable only to the Python retrieval step. The actual
+value must never be included in the workflow or this documentation.
+
+Under **Run workflow**, choose **test** first (the default). This performs
+three live queries and produces `access-test.json` on success. It does not
+claim a complete corpus harvest. After a successful test, start a new run
+with **full** to retrieve the corpus. Both modes share the concurrency group.
+Every request, including retries and pagination, is spaced by at least two
+seconds. CERL has authorised scripted access with a maximum of 60 requests
+per minute; this workflow stays below that limit when run on its own.
+
 The file `.github/workflows/harvest-mei.yml` defines a manually triggered
 workflow called **Harvest MEI corpus**. It must be committed to the default
 branch before it appears in the Actions tab.
@@ -107,8 +122,11 @@ refresh requires a new cache generation and no pilot seeding.
 Local checks exercise existing pilot responses, continuation, incomplete
 outputs and the direct/bound-with distinction. On 26 September the direct
 CERL connection from the development environment timed out; no new MEI
-records were obtained in that preparation step. GitHub execution remains to
-be tested. Geographic resolution and publication of the expanded corpus are
+records were obtained in that preparation step. Subsequent GitHub runs
+encountered CERL's ANUBIS challenge. On 30 September CERL supplied an
+authorised User-Agent mechanism. The updated secret-based workflow has been
+checked locally with simulated responses; live access remains to be tested
+on GitHub. Geographic resolution and publication of the expanded corpus are
 subsequent steps.
 
 References:

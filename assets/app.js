@@ -19,13 +19,14 @@ const state = {
   place: "",
   language: "",
   layers: [],
+  focusedCopy: null,
 };
 
 const els = Object.fromEntries([
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
   "detail-panel", "detail-content", "detail-close", "about-panel", "about-button",
-  "about-close", "map-message"
+  "about-close", "map-message", "clear-focus"
 ].map(id => [id, document.getElementById(id)]));
 
 const map = L.map("map", { zoomControl: true, minZoom: 2, worldCopyJump: true }).setView([48.8, 8.5], 4);
@@ -132,6 +133,35 @@ function holdingLabel(copy) {
     ? "Heutiger Aufenthaltsort unbekannt" : copy.holding_institution_name || "Aufbewahrungsort nicht angegeben";
 }
 
+function segmentEvidence(from, to, all) {
+  const reasons = [];
+  if ([from, to].some(s => s.display_uncertainty || s.spatial_precision === "country")) reasons.push("Ortszuweisung unsicher oder nur näherungsweise");
+  if ([from, to].some(s => s.date_warning)) reasons.push("Widersprüchliche Datierung");
+  const middle = all.slice(all.indexOf(from) + 1, all.indexOf(to));
+  if (middle.length || Number(to.source_order) - Number(from.source_order) > 1) reasons.push("Dazwischenliegende Nachweise nicht dargestellt");
+  const end = numeric(from.time_end), start = numeric(to.time_start);
+  if (end === null || start === null) reasons.push("Übergang nicht ausreichend datiert");
+  else if (start > end + 1) reasons.push("Zeitliche Lücke zwischen den Nachweisen");
+  else if (start < (numeric(from.time_start) ?? end)) reasons.push("Zeitliche Reihenfolge nicht eindeutig");
+  if (Number(from.source_order) === Number(to.source_order)) reasons.push("Orte desselben Quellenblocks; keine gesicherte Abfolge");
+  return { dashed: reasons.length > 0, description: reasons.length ? reasons.join("; ") : "Datierte Ortsfolge ohne erkennbare Lücke in den dargestellten Nachweisen" };
+}
+
+function updateRouteFocus() {
+  for (const item of state.layers) {
+    const active = item.copyId === state.focusedCopy;
+    const muted = state.focusedCopy && !active;
+    item.layer.setStyle({ weight: active ? (item.marker ? 3 : 6) : (item.marker ? 2 : 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
+    if (active) item.layer.bringToFront();
+  }
+  els["clear-focus"].hidden = !state.focusedCopy;
+}
+
+function focusCopy(copyId) {
+  state.focusedCopy = copyId;
+  updateRouteFocus();
+}
+
 function colorFor(id) {
   let hash = 0;
   for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
@@ -174,6 +204,7 @@ function popupHtml(copy) {
 }
 
 function clearMapLayers() {
+  state.layers = [];
   routeLayer.clearLayers();
   locationLayer.clearLayers();
 }
@@ -181,38 +212,48 @@ function clearMapLayers() {
 function renderMap({ fit = false } = {}) {
   clearMapLayers();
   const copies = displayedCopies();
+  if (!copies.some(c => c.copy_id === state.focusedCopy)) state.focusedCopy = null;
   const bounds = [];
   let located = 0;
   let mappedStations = 0;
 
   for (const copy of copies) {
     const color = colorFor(copy.copy_id);
-    const route = compactMappedRoute(routeAtYear(copy.copy_id, state.year));
+    const route = routeAtYear(copy.copy_id, state.year);
     mappedStations += route.length;
     const coordinates = route.map(point);
     coordinates.forEach(value => bounds.push(value));
-    if (coordinates.length > 1) {
-      const line = L.polyline(coordinates, { color, weight: 3, opacity: .48, dashArray: "6 5", lineCap: "round" }).addTo(routeLayer);
-      line.bindPopup(popupHtml(copy));
-      line.on("mouseover", () => line.setStyle({ weight: 6, opacity: .9 }));
-      line.on("mouseout", () => line.setStyle({ weight: 3, opacity: .48 }));
+    for (let i = 1; i < route.length; i += 1) {
+      if (samePoint(route[i - 1], route[i])) continue;
+      const evidence = segmentEvidence(route[i - 1], route[i], copyStations(copy.copy_id));
+      const line = L.polyline([point(route[i - 1]), point(route[i])], { color, weight: 3, opacity: .55, dashArray: evidence.dashed ? "6 5" : null, lineCap: "round", bubblingMouseEvents: false }).addTo(routeLayer);
+      state.layers.push({ layer: line, copyId: copy.copy_id, marker: false });
+      line.bindPopup(popupHtml(copy) + `<p class="method-note">${escapeHtml(evidence.description)}. Schematische Verbindung, keine rekonstruierte Reiseroute.</p>`, { autoPan: false });
+      line.on("click", () => focusCopy(copy.copy_id));
+      line.on("mouseover", () => { if (!state.focusedCopy) line.setStyle({ weight: 5, opacity: .9 }); });
+      line.on("mouseout", updateRouteFocus);
     }
     const location = locationAtYear(copy.copy_id, state.year);
     if (location) {
       located += 1;
       const marker = L.circleMarker(point(location.station), {
         radius: location.station.spatial_precision === "country" ? 11 : 6,
+        bubblingMouseEvents: false,
         dashArray: location.station.spatial_precision === "country" ? "3 3" : null,
         color,
         weight: 2,
         fillColor: location.inferred ? "#ffffff" : color,
         fillOpacity: 1
       }).addTo(locationLayer);
-      marker.bindPopup(popupHtml(copy));
+      state.layers.push({ layer: marker, copyId: copy.copy_id, marker: true });
+      marker.bindPopup(popupHtml(copy), { autoPan: false });
+      marker.on("click", () => focusCopy(copy.copy_id));
       marker.bindTooltip(`${copy.title || "Ohne Titel"} · ${location.station.location_label}${location.inferred ? " · Annäherung / letzter Nachweis" : ""}${location.station.display_uncertainty ? " · " + location.station.display_uncertainty : ""}`, { direction: "top", opacity: .94 });
       bounds.push(point(location.station));
     }
   }
+
+  updateRouteFocus();
 
   els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} mit Kartenpunkt für ${state.year} · ${mappedStations} dargestellte Wegpunkte`;
   els["map-message"].hidden = copies.length > 0;
@@ -258,6 +299,7 @@ function stationTime(station) {
 function openDetail(copyId) {
   const copy = state.copies.find(item => item.copy_id === copyId);
   if (!copy) return;
+  focusCopy(copyId);
   const stations = compactStationsForDisplay(copyId);
   const print = printStation(copyId);
   els["detail-content"].innerHTML = `
@@ -303,6 +345,8 @@ function populateFilters() {
 }
 
 function bindEvents() {
+  map.on("click", () => { focusCopy(null); closePanel(els["detail-panel"]); });
+  els["clear-focus"].addEventListener("click", () => { focusCopy(null); map.closePopup(); closePanel(els["detail-panel"]); });
   els["year-slider"].addEventListener("input", event => { state.year = Number(event.target.value); render({ list: false }); });
   els["search-input"].addEventListener("input", event => { state.search = event.target.value.trim().toLocaleLowerCase("de"); render(); });
   els["place-filter"].addEventListener("change", event => { state.place = event.target.value; render({ fit: true }); });
@@ -320,7 +364,7 @@ function bindEvents() {
   els["select-visible"].addEventListener("click", () => { filteredCopies().forEach(copy => state.selected.add(copy.copy_id)); render({ fit: true }); });
   els["clear-visible"].addEventListener("click", () => { filteredCopies().forEach(copy => state.selected.delete(copy.copy_id)); render(); });
   els["reset-button"].addEventListener("click", () => {
-    state.year = CURRENT_YEAR; state.search = ""; state.place = ""; state.language = "";
+    state.year = CURRENT_YEAR; state.search = ""; state.place = ""; state.language = ""; state.focusedCopy = null;
     state.copies.forEach(copy => state.selected.add(copy.copy_id));
     els["year-slider"].value = CURRENT_YEAR; els["search-input"].value = ""; els["place-filter"].value = ""; els["language-filter"].value = "";
     render({ fit: true });

@@ -12,6 +12,7 @@ from collections import defaultdict, Counter
 from pathlib import Path
 import build_itinerary_stations as stations
 import resolve_station_locations as pilot
+from apply_place_review import apply_review, COLUMNS as REVIEW_COLUMNS
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'data/expanded'
@@ -184,15 +185,16 @@ def main():
             if label in {'Buchbinderwerkstätten (nicht lokalisiert)','Einbände (ohne Nachweis)','Historical Copy','Trade Copy'}:status='non_geographic'
             row.update(latitude='',longitude='',location_resolution_status=status,location_resolution_method='unresolved')
         result.append(row)
-    columns=list(stations.STATION_COLUMNS)+extra
+    result = apply_review(result, ROOT)
+    columns=list(stations.STATION_COLUMNS)+extra+REVIEW_COLUMNS
     write(tables/'mei-itinerary-stations-resolved.csv',result,columns)
     unresolved=[r for r in result if not r['latitude'] or not r['longitude']]
     write(tables/'location-review.csv',unresolved,columns)
     write(tables/'location-decisions.csv',[r for r in result if r['location_resolution_method']!='coordinates_supplied_by_mei'],columns)
     summary={'direct_copies':len(direct),'stations':len(result),'with_coordinates':len(result)-len(unresolved),
-        'by_type':{t:dict(total=sum(r['station_type']==t for r in result),with_coordinates=sum(r['station_type']==t and bool(r['latitude'] and r['longitude']) for r in result)) for t in ['print_place','provenance_place','current_holding']},
+        'by_type':{t:dict(total=sum(r['station_type']==t for r in result),with_coordinates=sum(r['station_type']==t and bool(r['latitude'] and r['longitude']) for r in result)) for t in ['print_place','provenance_place','current_holding','last_known']},
         'unresolved_statuses':dict(Counter(r['location_resolution_status'] for r in unresolved)),
-        'complete_routes_with_endpoints':sum(all(r['latitude'] and r['longitude'] for r in result if r['mei_id']==mid and r['station_type'] in ['print_place','current_holding']) for mid in direct)}
+        'complete_routes_with_endpoints':sum(any(r['station_type']=='current_holding' for r in result if r['mei_id']==mid) and all(r['latitude'] and r['longitude'] for r in result if r['mei_id']==mid and r['station_type'] in ['print_place','current_holding']) for mid in direct)}
     (OUT/'location-status.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
     print(json.dumps(summary,indent=2))
 

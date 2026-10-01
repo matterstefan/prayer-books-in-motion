@@ -1,0 +1,73 @@
+[
+  {
+    "gid": "2820256",
+    "name": "Ulm",
+    "country": "DE",
+    "lat": "48.39841",
+    "lon": "9.99155",
+    "aliases": [],
+    "source": "https://www.geonames.org/2820256",
+    "checked_on": "2026-10-01"
+  },
+  {
+    "gid": "2861650",
+    "name": "Nuremberg",
+    "country": "DE",
+    "lat": "49.45421",
+    "lon": "11.07752",
+    "aliases": [
+      "Nürnberg"
+    ],
+    "source": "https://www.geonames.org/2861650",
+    "checked_on": "2026-10-01"
+  },
+  {
+    "gid": "3181928",
+    "name": "Bologna",
+    "country": "IT",
+    "lat": "44.49381",
+    "lon": "11.33875",
+    "aliases": [],
+    "source": "https://www.geonames.org/3181928",
+    "checked_on": "2026-10-01"
+  },
+  {
+    "gid": "3173435",
+    "name": "Milan",
+    "country": "IT",
+    "lat": "45.46427",
+    "lon": "9.18951",
+    "aliases": [
+      "Milano",
+      "Mailand"
+    ],
+    "source": "https://www.geonames.org/3173435",
+    "checked_on": "2026-10-01"
+  },
+  {
+    "gid": "3164603",
+    "name": "Venice",
+    "country": "IT",
+    "lat": "45.43713",
+    "lon": "12.33265",
+    "aliases": [
+      "Venezia",
+      "Venedig"
+    ],
+    "source": "https://www.geonames.org/3164603",
+    "checked_on": "2026-10-01"
+  },
+  {
+    "gid": "3165524",
+    "name": "Turin",
+    "country": "IT",
+    "lat": "45.07049",
+    "lon": "7.68682",
+    "aliases": [
+      "Torino",
+      "Turin"
+    ],
+    "source": "https://www.geonames.org/3165524",
+    "checked_on": "2026-10-01"
+  }
+]

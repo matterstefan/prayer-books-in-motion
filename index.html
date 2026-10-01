@@ -30,13 +30,13 @@
           </div>
           <input id="year-slider" class="year-slider" type="range" min="1450" max="2026" value="2026" step="1" aria-label="Jahr auswählen">
           <div class="year-scale" aria-hidden="true"><span>1450</span><span>1500</span><span>1600</span><span>1800</span><span>2026</span></div>
-          <p class="method-note">Zwischen punktuellen Nachweisen wird der letzte bekannte Ort fortgeschrieben. Diese Zeiträume sind als Annäherung markiert.</p>
+          <p class="method-note">Zwischen punktuellen Nachweisen wird der letzte bekannte Ort fortgeschrieben. Offene Punkte kennzeichnen Annäherungen; Linien sind schematisch und können Lücken überbrücken.</p>
         </section>
 
         <section class="filter-panel" aria-labelledby="filter-title">
           <h2 id="filter-title" class="visually-hidden">Drucke auswählen und filtern</h2>
           <label class="search-label" for="search-input">Drucke durchsuchen</label>
-          <input id="search-input" class="search-input" type="search" placeholder="Titel, Signatur, MEI- oder ISTC-ID">
+          <input id="search-input" class="search-input" type="search" placeholder="Titel, Bibliothek, Signatur oder ID">
           <div class="filter-grid">
             <label> Druckort
               <select id="place-filter"><option value="">Alle Druckorte</option></select>
@@ -58,9 +58,9 @@
       <section class="map-shell" aria-label="Karte der Druckwege">
         <div id="map" class="map"></div>
         <div class="map-legend" aria-label="Legende">
-          <span><i class="legend-dot documented"></i> zeitlich belegt</span>
-          <span><i class="legend-dot inferred"></i> fortgeschrieben</span>
-          <span><i class="legend-line"></i> dokumentierte Stationsfolge</span>
+          <span><i class="legend-dot documented"></i> im Quellenzeitraum</span>
+          <span><i class="legend-dot inferred"></i> Annäherung / letzter Nachweis</span>
+          <span><i class="legend-line"></i> schematische Stationsfolge (mit Lücken)</span>
         </div>
         <div id="map-message" class="map-message" hidden></div>
       </section>
@@ -82,7 +82,7 @@
       <h2 id="about-title">Was diese Karte zeigt</h2>
       <p>Die Anwendung aggregiert offen zugängliche Daten aus GW, ISTC und MEI. Sie erzeugt keine neuen Katalog- oder Provenienznachweise, sondern erprobt ihre gemeinsame Visualisierung.</p>
       <p>Gerade Linien verbinden belegte Stationen in der überlieferten Reihenfolge; sie behaupten keine konkrete Reiseroute. Der Zeitregler stellt keinen lückenlosen historischen Aufenthaltsnachweis her: Zwischen datierten Stationen wird der zuletzt bekannte Ort lediglich fortgeschrieben.</p>
-      <p>Mehrdeutige, nur auf Länderebene bekannte oder nicht geografische Angaben bleiben in den Details erhalten und werden nicht automatisch auf der Karte verortet.</p>
+      <p>Die Karte umfasst 484 direkt mit dem Korpus verknüpfte MEI-Exemplarnachweise. Indirekte Sammelbandbeziehungen bleiben in den Datentabellen erhalten; deren Provenienzen werden hier nicht automatisch übertragen. Datenabrufe: 23.–30. September 2026; Ortsprüfung: 1. Oktober 2026.</p><p>Manuell zugewiesene und unsichere Orte sind in den Details erläutert. Italien erscheint als repräsentativer Länderpunkt (grösserer gestrichelter Kreis). Drei nicht lokalisierbare Einband- und Werkstattangaben bleiben ohne Kartenpunkt. Linien können solche Lücken überbrücken.</p><p>Vier historische oder Handelsnachweise haben keinen bekannten heutigen Aufbewahrungsort. Die Karte zeigt ihren letzten bekannten Ort mit einem offenen Punkt. Zeiträume stammen aus den Katalogen und können nur ungefähre Zuordnungen ausdrücken; undatierte oder widersprüchlich datierte Stationen sind nur in der Gesamtansicht enthalten.</p>
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

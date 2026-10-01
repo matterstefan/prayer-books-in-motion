@@ -1,0 +1,710 @@
+{
+  "reviewer": "Stefan Matter",
+  "review_date": "2026-10-01",
+  "source_file": "Offene_Orte_Pruefliste(1).xlsx",
+  "decisions": [
+    {
+      "review_id": "ORT-384829F8",
+      "label": "Bologna",
+      "chosen_name": "Bologna",
+      "note": "",
+      "context": "GW 13390; 1498",
+      "station_ids": [
+        "00200704-print",
+        "00200705-print",
+        "00200707-print",
+        "00200706-print"
+      ]
+    },
+    {
+      "review_id": "ORT-B049E2FF",
+      "label": "Gripsholm",
+      "chosen_name": "Gipsholm",
+      "note": "erschlossen: [Gripsholm: Kartäuserkloster Mariefred]",
+      "context": "GW M39205; 1498",
+      "station_ids": [
+        "02145460-print",
+        "02147105-print"
+      ]
+    },
+    {
+      "review_id": "ORT-D658A1D8",
+      "label": "Hasselt",
+      "chosen_name": "Hasselt",
+      "note": "",
+      "context": "GW 13430; 1488",
+      "station_ids": [
+        "00560460-print",
+        "02101036-print"
+      ]
+    },
+    {
+      "review_id": "ORT-CFF8B19E",
+      "label": "Italien",
+      "chosen_name": "Italien",
+      "note": "hier könnte man so etwas wie eine geographische, rechnerisch erzeugte Mitte des Landes nehmen",
+      "context": "GW 13328; 1500",
+      "station_ids": [
+        "00200668-print"
+      ]
+    },
+    {
+      "review_id": "ORT-94C92DC2",
+      "label": "Kirchheim",
+      "chosen_name": "Kirchheim im Elsass",
+      "note": "ich kenne diese Drucke",
+      "context": "GW 12953; 1490",
+      "station_ids": [
+        "02118389-print"
+      ]
+    },
+    {
+      "review_id": "ORT-27410479",
+      "label": "Kirchheim",
+      "chosen_name": "Kirchheim im Elsass",
+      "note": "ich kenne diese Drucke",
+      "context": "GW 12984; 1491",
+      "station_ids": [
+        "00560464-print"
+      ]
+    },
+    {
+      "review_id": "ORT-F6A59136",
+      "label": "Memmingen",
+      "chosen_name": "Memmingen",
+      "note": "erschlossen [Memmingen: Albrecht Kunne, um 1483/86]",
+      "context": "GW 12964; 1483–1486",
+      "station_ids": [
+        "02117004-print",
+        "02126336-print"
+      ]
+    },
+    {
+      "review_id": "ORT-7C24B994",
+      "label": "Montserrat",
+      "chosen_name": "Montserrat",
+      "note": "man muss sich hier für unser Projekt einfach für etwas entscheiden",
+      "context": "GW 13441; 1499",
+      "station_ids": [
+        "02010269-print"
+      ]
+    },
+    {
+      "review_id": "ORT-1C6F79FF",
+      "label": "Paris oder Rouen",
+      "chosen_name": "Paris",
+      "note": "man muss sich hier für unser Projekt einfach für etwas entscheiden",
+      "context": "GW 13093; 1495",
+      "station_ids": [
+        "00205587-print",
+        "00212866-print"
+      ]
+    },
+    {
+      "review_id": "ORT-54F9F609",
+      "label": "Paris(?)",
+      "chosen_name": "Paris",
+      "note": "man muss sich hier für unser Projekt einfach für etwas entscheiden",
+      "context": "GW 13051; 1488",
+      "station_ids": [
+        "00560443-print"
+      ]
+    },
+    {
+      "review_id": "ORT-79A3571C",
+      "label": "Speyer",
+      "chosen_name": "Speyer",
+      "note": "erschlossen: [Speyer: Peter Drach d.M.]",
+      "context": "GW 12966; 1488",
+      "station_ids": [
+        "02118529-print",
+        "02136285-print"
+      ]
+    },
+    {
+      "review_id": "ORT-AEFF3068",
+      "label": "Venedig(?)",
+      "chosen_name": "Venedig",
+      "note": "",
+      "context": "GW 13397; 1495",
+      "station_ids": [
+        "00200579-print"
+      ]
+    },
+    {
+      "review_id": "ORT-2D80265B",
+      "label": "Zinna",
+      "chosen_name": "Zinna",
+      "note": "",
+      "context": "GW M27158; 1493–1496",
+      "station_ids": [
+        "00561251-print",
+        "02116074-print",
+        "00204685-print"
+      ]
+    },
+    {
+      "review_id": "ORT-BB48B66A",
+      "label": "Zwolle",
+      "chosen_name": "Zwolle",
+      "note": "",
+      "context": "GW M38907; 1491–1492",
+      "station_ids": [
+        "02100762-print"
+      ]
+    },
+    {
+      "review_id": "ORT-808D07DD",
+      "label": "(ohne Ortsbezeichnung)",
+      "chosen_name": "Kiel",
+      "note": "https://data.cerl.org/owners/2820",
+      "context": "Vollbehr, Otto Heinrich Friedrich; Zeitraum: ?–1925",
+      "station_ids": [
+        "02156758-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-93E4EE2C",
+      "label": "Braunschweig",
+      "chosen_name": "Braunschweig",
+      "note": "",
+      "context": "Bernd von Broitzem; Zeitraum: 1512–1604",
+      "station_ids": [
+        "02131171-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-E449CAAF",
+      "label": "Buchbinderwerkstätten (nicht lokalisiert)",
+      "chosen_name": "",
+      "note": "",
+      "context": "P. A.; Zeitraum: ?–?",
+      "station_ids": [
+        "02136283-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-F17A9900",
+      "label": "Buchbinderwerkstätten (nicht lokalisiert)",
+      "chosen_name": "",
+      "note": "",
+      "context": "Zweig frei; Zeitraum: ?–?",
+      "station_ids": [
+        "02136284-p004-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-EA484A58",
+      "label": "Einbände (ohne Nachweis)",
+      "chosen_name": "",
+      "note": "",
+      "context": "Rollen; Zeitraum: ?–?",
+      "station_ids": [
+        "02137128-p003-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-CC29ED12",
+      "label": "Huddersfield",
+      "chosen_name": "Huddersfield",
+      "note": "",
+      "context": "Brooke, Thomas; Zeitraum: 1860–1908",
+      "station_ids": [
+        "02011333-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-EB459E02",
+      "label": "Italien",
+      "chosen_name": "Italien",
+      "note": "hier könnte man so etwas wie eine geographische, rechnerisch erzeugte Mitte des Landes nehmen",
+      "context": "Kein Besitzername in diesem Block; Zeitraum: ?–1500",
+      "station_ids": [
+        "02004011-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-962E4345",
+      "label": "Italien",
+      "chosen_name": "Italien",
+      "note": "hier könnte man so etwas wie eine geographische, rechnerisch erzeugte Mitte des Landes nehmen",
+      "context": "Kein Besitzername in diesem Block; Zeitraum: ?–1500",
+      "station_ids": [
+        "02004012-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-DC45DE97",
+      "label": "Italien",
+      "chosen_name": "Italien",
+      "note": "hier könnte man so etwas wie eine geographische, rechnerisch erzeugte Mitte des Landes nehmen",
+      "context": "Kein Besitzername in diesem Block; Zeitraum: 1478–1500",
+      "station_ids": [
+        "02004013-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-0A687671",
+      "label": "Italy",
+      "chosen_name": "Italien",
+      "note": "hier könnte man so etwas wie eine geographische, rechnerisch erzeugte Mitte des Landes nehmen",
+      "context": "Kein Besitzername in diesem Block; Zeitraum: 1499–1600",
+      "station_ids": [
+        "02000285-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-3DE24268",
+      "label": "Mergentheim",
+      "chosen_name": "Mergentheim",
+      "note": "",
+      "context": "Deutscher Orden Mergentheim; Zeitraum: ?–?",
+      "station_ids": [
+        "02136285-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-BF5A0F39",
+      "label": "Princeton, NJ",
+      "chosen_name": "Princeton",
+      "note": "ist gleich Princeton (Geonames ID: 5102922)",
+      "context": "Scheide, William Hurd; Zeitraum: 1942–2014",
+      "station_ids": [
+        "00200662-p006-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-005FD384",
+      "label": "Princeton, NJ",
+      "chosen_name": "Princeton",
+      "note": "ist gleich Princeton (Geonames ID: 5102922)",
+      "context": "Mather, Frank Jewett <Jr.>; Zeitraum: 1910–1945",
+      "station_ids": [
+        "00201176-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-9994A659",
+      "label": "Princeton, NJ",
+      "chosen_name": "Princeton",
+      "note": "ist gleich Princeton (Geonames ID: 5102922)",
+      "context": "Princeton university, Library; Zeitraum: 1941–?",
+      "station_ids": [
+        "02013229-p007-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-445CF3AC",
+      "label": "Schwarzau am Steinfeld (Vienna)?",
+      "chosen_name": "Schwarzau am Steinfeld",
+      "note": "",
+      "context": "Borbone, Roberto <Parma, Duca, I> <Duke of Parma 1854-59>; Zeitraum: 1883–1907",
+      "station_ids": [
+        "02003961-p003-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-E236C774",
+      "label": "Stuttgart",
+      "chosen_name": "Stuttgart",
+      "note": "",
+      "context": "Königliche Handbibliothek Stuttgart; Zeitraum: ?–?",
+      "station_ids": [
+        "02136284-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-335FFB03",
+      "label": "Titusville",
+      "chosen_name": "Titusville",
+      "note": "",
+      "context": "Scheide, John Hinsdale; Zeitraum: 1929–1942",
+      "station_ids": [
+        "00200662-p005-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-B57D5A12",
+      "label": "Tuxedo Park",
+      "chosen_name": "Tuxedo Park",
+      "note": "",
+      "context": "Kane, Grenville; Zeitraum: 1921–1850",
+      "station_ids": [
+        "02013229-p006-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-FD85E5B7",
+      "label": "Valençay",
+      "chosen_name": "Valençay",
+      "note": "",
+      "context": "Carlos María Isidro de Borbón; Fernando VII, Rey de España; Francisco de Paula de Borbón; Zeitraum: 1801–1820",
+      "station_ids": [
+        "02002302-p002-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-64ED3113",
+      "label": "Venezia",
+      "chosen_name": "Venedig",
+      "note": "",
+      "context": "Venezia, Fondazione Giorgio Cini; Zeitraum: 1951–?",
+      "station_ids": [
+        "02000343-p006-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-18AC6571",
+      "label": "Weingarten",
+      "chosen_name": "Weingarten",
+      "note": "das Kloster",
+      "context": "Benediktiner Weingarten; Zeitraum: ?–?",
+      "station_ids": [
+        "02136283-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-00E61902",
+      "label": "Weingarten",
+      "chosen_name": "Weingarten",
+      "note": "das Kloster",
+      "context": "Benediktiner Weingarten; Zeitraum: ?–?",
+      "station_ids": [
+        "02136284-p001-loc01"
+      ]
+    },
+    {
+      "review_id": "ORT-923F2C9C",
+      "label": "Oldenburg, Landesbibliothek",
+      "chosen_name": "Oldenburg",
+      "note": "",
+      "context": "Land: DE",
+      "station_ids": [
+        "00200548-current"
+      ]
+    },
+    {
+      "review_id": "ORT-7582AA47",
+      "label": "Allendale MI, Grand Valley State University, Seidman House",
+      "chosen_name": "Allendale",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02162911-current",
+        "00202014-current"
+      ]
+    },
+    {
+      "review_id": "ORT-BB27428E",
+      "label": "Austin TX, University of Texas, Harry Ransom Center",
+      "chosen_name": "Austin",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "00200631-current"
+      ]
+    },
+    {
+      "review_id": "ORT-72DB4B2F",
+      "label": "Bassano del Grappa, Museo Biblioteca Archivio",
+      "chosen_name": "Bassano del Grappa",
+      "note": "",
+      "context": "Land: IT",
+      "station_ids": [
+        "00200541-current"
+      ]
+    },
+    {
+      "review_id": "ORT-7A43E250",
+      "label": "Blickling, Blickling Estate",
+      "chosen_name": "Blickling",
+      "note": "",
+      "context": "Land: GB",
+      "station_ids": [
+        "00200643-current"
+      ]
+    },
+    {
+      "review_id": "ORT-13072BCB",
+      "label": "Bologna, Archivio di Stato",
+      "chosen_name": "Bologna",
+      "note": "",
+      "context": "Land: IT",
+      "station_ids": [
+        "00200704-current"
+      ]
+    },
+    {
+      "review_id": "ORT-7B87E90C",
+      "label": "Bologna, Biblioteca Comunale dell'Archiginnasio",
+      "chosen_name": "Bologna",
+      "note": "",
+      "context": "Land: IT",
+      "station_ids": [
+        "00200705-current"
+      ]
+    },
+    {
+      "review_id": "ORT-0CD4D063",
+      "label": "Burlington VT, University of Vermont, Silver Special Collections Library",
+      "chosen_name": "Burlington",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02145200-current"
+      ]
+    },
+    {
+      "review_id": "ORT-39CC233E",
+      "label": "Castroreale Fondo Museo Civico",
+      "chosen_name": "Castroreale",
+      "note": "",
+      "context": "Land: IT",
+      "station_ids": [
+        "02174458-current"
+      ]
+    },
+    {
+      "review_id": "ORT-DD656D97",
+      "label": "Città del Vaticano, Biblioteca Apostolica Vaticana",
+      "chosen_name": "Vatikan",
+      "note": "",
+      "context": "Land: VA",
+      "station_ids": [
+        "02000020-current",
+        "00200526-current",
+        "00200585-current",
+        "00200579-current",
+        "00200654-current",
+        "00200655-current"
+      ]
+    },
+    {
+      "review_id": "ORT-35F5E504",
+      "label": "Clinton NY, Hamilton College, Burke Library",
+      "chosen_name": "Clinton",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "00200708-current"
+      ]
+    },
+    {
+      "review_id": "ORT-6A70D7BF",
+      "label": "Durham, University Library, Barker Research Library, Palace Green",
+      "chosen_name": "Durham",
+      "note": "",
+      "context": "Land: GB",
+      "station_ids": [
+        "00201175-current"
+      ]
+    },
+    {
+      "review_id": "ORT-D71FF892",
+      "label": "Durham, Ushaw College",
+      "chosen_name": "Durham",
+      "note": "",
+      "context": "Land: GB",
+      "station_ids": [
+        "00201177-current"
+      ]
+    },
+    {
+      "review_id": "ORT-B6C1FED3",
+      "label": "Esztergom, Érseki Simor Könyvtár",
+      "chosen_name": "Esztergom",
+      "note": "",
+      "context": "Land: HU",
+      "station_ids": [
+        "00200709-current"
+      ]
+    },
+    {
+      "review_id": "ORT-D9F69B6F",
+      "label": "Historical Copy",
+      "chosen_name": "Wien",
+      "note": "ein in Wien 1905 verkaufter Druck, der nur im Auktionskatalog nachgewiesen ist",
+      "context": "Land: nicht angegeben",
+      "station_ids": [
+        "00201166-current",
+        "00201167-current"
+      ]
+    },
+    {
+      "review_id": "ORT-E106E51E",
+      "label": "Iowa City IA, University of Iowa, Main Library",
+      "chosen_name": "Iowa City",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02122666-current"
+      ]
+    },
+    {
+      "review_id": "ORT-906EE6B5",
+      "label": "Klosterneuburg, Chorherren, Stiftsbibliothek",
+      "chosen_name": "Klosterneuburg",
+      "note": "",
+      "context": "Land: AT",
+      "station_ids": [
+        "00200712-current"
+      ]
+    },
+    {
+      "review_id": "ORT-DB7BF974",
+      "label": "Los Angeles CA, University of California",
+      "chosen_name": "Los Angeles",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02169264-current",
+        "02169730-current",
+        "00200681-current",
+        "00200710-current",
+        "00200639-current"
+      ]
+    },
+    {
+      "review_id": "ORT-204DEEFD",
+      "label": "New Haven CT, Yale University, Beinecke Library",
+      "chosen_name": "New Haven",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02126336-current",
+        "02125063-current",
+        "02125184-current"
+      ]
+    },
+    {
+      "review_id": "ORT-B5A08C2C",
+      "label": "Pisa, Biblioteca Cathariniana del Seminario Arcivescovile",
+      "chosen_name": "Pisa",
+      "note": "",
+      "context": "Land: IT",
+      "station_ids": [
+        "00200679-current"
+      ]
+    },
+    {
+      "review_id": "ORT-2F38A59F",
+      "label": "Praha, Národni knihovna České republiky",
+      "chosen_name": "Prag",
+      "note": "",
+      "context": "Land: CZ",
+      "station_ids": [
+        "00200683-current"
+      ]
+    },
+    {
+      "review_id": "ORT-108CFF82",
+      "label": "Praha, Strahovský klášter",
+      "chosen_name": "Prag",
+      "note": "",
+      "context": "Land: CZ",
+      "station_ids": [
+        "02174836-current",
+        "02174835-current"
+      ]
+    },
+    {
+      "review_id": "ORT-135032E7",
+      "label": "Provo UT, Brigham Young University, Harold B. Lee Library",
+      "chosen_name": "Provo",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "00200663-current"
+      ]
+    },
+    {
+      "review_id": "ORT-96E54DAA",
+      "label": "Salzburg, Städtisches Museum Carolino-Augusteum, Bibliothek",
+      "chosen_name": "Salzburg",
+      "note": "",
+      "context": "Land: AT",
+      "station_ids": [
+        "00200613-current"
+      ]
+    },
+    {
+      "review_id": "ORT-CB30A216",
+      "label": "San Marino CA, Huntington Library",
+      "chosen_name": "San Marino",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02156758-current",
+        "00200530-current",
+        "00200558-current",
+        "02149767-current",
+        "00200616-current",
+        "00200653-current",
+        "00200707-current"
+      ]
+    },
+    {
+      "review_id": "ORT-FF921484",
+      "label": "Strängnäs, Domkyrkobibliotek",
+      "chosen_name": "Strängnäs",
+      "note": "",
+      "context": "Land: SE",
+      "station_ids": [
+        "00200534-current"
+      ]
+    },
+    {
+      "review_id": "ORT-F5C6BF63",
+      "label": "Trade Copy",
+      "chosen_name": "Pforzheim",
+      "note": "bei Kiefer 2024 angebotener Druck",
+      "context": "Land: nicht angegeben",
+      "station_ids": [
+        "00201576-current",
+        "02125950-current"
+      ]
+    },
+    {
+      "review_id": "ORT-3DBD7FCB",
+      "label": "Valletta, National Library of Malta",
+      "chosen_name": "Valletta",
+      "note": "",
+      "context": "Land: MT",
+      "station_ids": [
+        "02154453-current",
+        "02154477-current"
+      ]
+    },
+    {
+      "review_id": "ORT-2967293D",
+      "label": "Warsaw Public Library",
+      "chosen_name": "Warschau",
+      "note": "",
+      "context": "Land: PL",
+      "station_ids": [
+        "02146351-current"
+      ]
+    },
+    {
+      "review_id": "ORT-456955D6",
+      "label": "Wellesley MA, Wellesley College, Margaret Clapp Library",
+      "chosen_name": "Wellesley",
+      "note": "",
+      "context": "Land: US",
+      "station_ids": [
+        "02131208-current"
+      ]
+    },
+    {
+      "review_id": "ORT-0280117C",
+      "label": "Zwickau, Ratsschulbibliothek",
+      "chosen_name": "Zwickau",
+      "note": "",
+      "context": "Land: DE",
+      "station_ids": [
+        "00200686-current",
+        "00200545-current"
+      ]
+    }
+  ]
+}

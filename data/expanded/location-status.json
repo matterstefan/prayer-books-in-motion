@@ -1,26 +1,27 @@
 {
   "direct_copies": 484,
   "stations": 1826,
-  "with_coordinates": 1726,
+  "with_coordinates": 1823,
   "by_type": {
     "print_place": {
       "total": 484,
-      "with_coordinates": 460
+      "with_coordinates": 484
     },
     "provenance_place": {
       "total": 858,
-      "with_coordinates": 836
+      "with_coordinates": 855
     },
     "current_holding": {
-      "total": 484,
-      "with_coordinates": 430
+      "total": 480,
+      "with_coordinates": 480
+    },
+    "last_known": {
+      "total": 4,
+      "with_coordinates": 4
     }
   },
   "unresolved_statuses": {
-    "needs_review": 85,
-    "non_geographic": 7,
-    "country_only": 5,
-    "ambiguous": 3
+    "non_geographic": 3
   },
-  "complete_routes_with_endpoints": 411
+  "complete_routes_with_endpoints": 480
 }

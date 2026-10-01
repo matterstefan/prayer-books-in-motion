@@ -2,7 +2,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const element=()=>({value:'',textContent:'',innerHTML:'',hidden:false,classList:{add(){},remove(){}},setAttribute(){},focus(){},insertAdjacentHTML(){},addEventListener(){}});
 const elements=new Map();const doc={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},addEventListener(){}};
 const map={setView(){return this},fitBounds(){this.fits=(this.fits||0)+1}};
-const layer=()=>({addTo(){return this},clearLayers(){},bindPopup(){},bindTooltip(){},on(){},setStyle(){}});
+const layer=()=>({addTo(){return this},clearLayers(){},bindPopup(){},bindTooltip(){},on(){},setStyle(style){this.style={...this.style,...style}},bringToFront(){}});
 const context=vm.createContext({console,document:doc,L:{map:()=>map,tileLayer:layer,layerGroup:layer,polyline:layer,circleMarker:layer}});
 vm.runInContext(fs.readFileSync('assets/app.js','utf8').replace(/loadData\(\);\s*$/,''),context);
 context.copiesText=fs.readFileSync('data/expanded/tables/mei-copies.csv','utf8');context.stationsText=fs.readFileSync('data/expanded/tables/mei-itinerary-stations-resolved.csv','utf8');context.assert=assert;
@@ -24,5 +24,17 @@ state.search='bologna';assert.ok(filteredCopies().length>0);state.search='';
 for(const c of state.copies)openDetail(c.copy_id);
 assert.equal(map.fits,undefined); // Opening details or moving time never resets the map.
 assert.ok(popupHtml(state.copies[0]).includes('Druck verfolgen'));
+state.year=2026;render();
+const first=state.layers[0];focusCopy(first.copyId);
+assert.equal(first.layer.style.weight,6);
+assert.equal(state.layers.find(x=>x.copyId!==first.copyId).layer.style.opacity,.12);
+updateRouteFocus();assert.equal(first.layer.style.weight,6);
+render({list:false});assert.equal(state.focusedCopy,first.copyId);
+focusCopy(null);assert.equal(state.layers[0].layer.style.opacity,.55);
+const a={source_order:'0',time_start:'1500',time_end:'1505'},b={source_order:'1',time_start:'1505',time_end:'1510'};
+assert.equal(segmentEvidence(a,b,[a,b]).dashed,false);
+assert.equal(segmentEvidence(a,{...b,time_start:'1550'},[a,b]).dashed,true);
+assert.equal(segmentEvidence(a,{...b,spatial_precision:'country'},[a,b]).dashed,true);
+assert.equal(segmentEvidence(a,{...b,time_start:''},[a,b]).dashed,true);
 `,context);
 console.log('PASS: full data rendering with Leaflet/DOM stubs; all 484 detail views, six slider years, pre-print dates, historic endpoints, filters, country point, date conflict and viewport.');

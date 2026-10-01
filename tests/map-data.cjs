@@ -31,6 +31,16 @@ assert.equal(state.layers.find(x=>x.copyId!==first.copyId).layer.style.opacity,.
 updateRouteFocus();assert.equal(first.layer.style.weight,6);
 render({list:false});assert.equal(state.focusedCopy,first.copyId);
 focusCopy(null);assert.equal(state.layers[0].layer.style.opacity,.55);
+const hoveredId=state.layers.find(x=>state.layers.filter(y=>y.copyId===x.copyId&&!y.marker).length>1).copyId;
+hoverCopy(hoveredId);
+assert.ok(state.layers.filter(x=>x.copyId===hoveredId&&!x.marker).every(x=>x.layer.style.weight===6));
+assert.ok(state.layers.filter(x=>x.copyId!==hoveredId).every(x=>x.layer.style.opacity===.12));
+assert.equal(els['clear-focus'].hidden,true);
+const lockedId=state.layers.find(x=>x.copyId!==hoveredId).copyId;
+focusCopy(lockedId);hoverCopy(hoveredId);hoverCopy(null);
+assert.ok(state.layers.filter(x=>x.copyId===lockedId).every(x=>x.layer.style.opacity===1));
+focusCopy(null);hoverCopy(hoveredId);hoverCopy(null);
+assert.ok(state.layers.every(x=>x.layer.style.opacity===.55));
 const a={source_order:'0',time_start:'1500',time_end:'1505'},b={source_order:'1',time_start:'1505',time_end:'1510'};
 assert.equal(segmentEvidence(a,b,[a,b]).dashed,false);
 assert.equal(segmentEvidence(a,{...b,time_start:'1550'},[a,b]).dashed,true);

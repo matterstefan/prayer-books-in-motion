@@ -1,0 +1,26 @@
+{
+  "direct_copies": 484,
+  "stations": 1826,
+  "with_coordinates": 1726,
+  "by_type": {
+    "print_place": {
+      "total": 484,
+      "with_coordinates": 460
+    },
+    "provenance_place": {
+      "total": 858,
+      "with_coordinates": 836
+    },
+    "current_holding": {
+      "total": 484,
+      "with_coordinates": 430
+    }
+  },
+  "unresolved_statuses": {
+    "needs_review": 85,
+    "non_geographic": 7,
+    "country_only": 5,
+    "ambiguous": 3
+  },
+  "complete_routes_with_endpoints": 411
+}

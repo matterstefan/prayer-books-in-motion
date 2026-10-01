@@ -49,8 +49,9 @@ h2 { margin-bottom: .45rem; font-family: Georgia, "Times New Roman", serif; font
 h3 { margin-bottom: .35rem; font-family: Georgia, "Times New Roman", serif; font-size: 1.08rem; }
 .eyebrow { margin-bottom: .12rem; color: var(--accent); font-size: .75rem; font-weight: 750; letter-spacing: .095em; text-transform: uppercase; }
 
-.workspace { height: calc(100vh - 76px); display: grid; grid-template-columns: minmax(320px, 400px) 1fr; }
-.controls { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); z-index: 700; }
+.workspace { height: calc(100vh - 76px); display: grid; grid-template-columns: minmax(320px, 400px) 1fr; grid-template-rows: minmax(0, 1fr); }
+.controls { min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); z-index: 700; }
+.controls > .time-panel, .controls > .filter-panel, .controls > .result-summary { flex-shrink: 0; }
 .time-panel, .filter-panel { padding: 1rem 1.15rem; border-bottom: 1px solid var(--line); }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
 .year-slider { width: 100%; accent-color: var(--accent); }
@@ -86,7 +87,8 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .selection-actions { display: flex; gap: 1rem; margin-top: .65rem; }
 .result-summary { padding: .65rem 1.15rem; border-bottom: 1px solid var(--line); background: var(--paper); color: var(--muted); font-size: .82rem; }
 
-.print-list { min-height: 0; overflow-y: auto; }
+.print-list { flex: 1 1 0; min-height: 8rem; overflow-y: auto; scrollbar-gutter: stable; }
+.print-list:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .print-card { position: relative; display: grid; grid-template-columns: 1.25rem 1fr; gap: .65rem; padding: .82rem 1.1rem; border-bottom: 1px solid #e7ebef; }
 .print-card:hover { background: #faf7f8; }
 .print-card.is-unselected { opacity: .58; }
@@ -97,7 +99,7 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .print-meta { margin: .28rem 0 0; color: var(--muted); font-size: .76rem; }
 .print-id { font-variant-numeric: tabular-nums; }
 
-.map-shell { position: relative; min-width: 0; background: #e8ecef; }
+.map-shell { position: relative; min-width: 0; min-height: 0; background: #e8ecef; }
 .map { width: 100%; height: 100%; }
 .map-legend { position: absolute; z-index: 600; left: 1rem; bottom: 1rem; display: flex; flex-wrap: wrap; gap: .45rem .9rem; max-width: calc(100% - 2rem); padding: .55rem .7rem; border: 1px solid rgba(80, 94, 107, .22); border-radius: .35rem; background: rgba(255,255,255,.94); box-shadow: 0 5px 20px rgba(20,31,43,.12); font-size: .75rem; }
 .map-legend span { display: inline-flex; align-items: center; gap: .35rem; }
@@ -157,7 +159,7 @@ select { padding: .45rem 2rem .45rem .55rem; }
   .controls { border-right: 0; border-bottom: 1px solid var(--line); }
   .time-panel, .filter-panel { padding: .7rem .85rem; }
   .method-note { display: none; }
-  .print-list { display: none; }
+  .print-list { min-height: 10rem; }
   .result-summary { border-bottom: 0; }
   .detail-panel, .about-panel { top: 68px; height: calc(100vh - 68px); }
   .map-legend { left: .6rem; right: .6rem; bottom: .6rem; }

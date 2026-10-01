@@ -20,6 +20,7 @@ const state = {
   language: "",
   layers: [],
   focusedCopy: null,
+  hoveredCopy: null,
 };
 
 const els = Object.fromEntries([
@@ -148,9 +149,10 @@ function segmentEvidence(from, to, all) {
 }
 
 function updateRouteFocus() {
+  const highlightedCopy = state.focusedCopy || state.hoveredCopy;
   for (const item of state.layers) {
-    const active = item.copyId === state.focusedCopy;
-    const muted = state.focusedCopy && !active;
+    const active = item.copyId === highlightedCopy;
+    const muted = highlightedCopy && !active;
     item.layer.setStyle({ weight: active ? (item.marker ? 3 : 6) : (item.marker ? 2 : 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
     if (active) item.layer.bringToFront();
   }
@@ -159,6 +161,12 @@ function updateRouteFocus() {
 
 function focusCopy(copyId) {
   state.focusedCopy = copyId;
+  state.hoveredCopy = null;
+  updateRouteFocus();
+}
+
+function hoverCopy(copyId) {
+  state.hoveredCopy = copyId;
   updateRouteFocus();
 }
 
@@ -204,6 +212,7 @@ function popupHtml(copy) {
 }
 
 function clearMapLayers() {
+  state.hoveredCopy = null;
   state.layers = [];
   routeLayer.clearLayers();
   locationLayer.clearLayers();
@@ -230,8 +239,8 @@ function renderMap({ fit = false } = {}) {
       state.layers.push({ layer: line, copyId: copy.copy_id, marker: false });
       line.bindPopup(popupHtml(copy) + `<p class="method-note">${escapeHtml(evidence.description)}. Schematische Verbindung, keine rekonstruierte Reiseroute.</p>`, { autoPan: false });
       line.on("click", () => focusCopy(copy.copy_id));
-      line.on("mouseover", () => { if (!state.focusedCopy) line.setStyle({ weight: 5, opacity: .9 }); });
-      line.on("mouseout", updateRouteFocus);
+      line.on("mouseover", () => hoverCopy(copy.copy_id));
+      line.on("mouseout", () => hoverCopy(null));
     }
     const location = locationAtYear(copy.copy_id, state.year);
     if (location) {
@@ -248,6 +257,8 @@ function renderMap({ fit = false } = {}) {
       state.layers.push({ layer: marker, copyId: copy.copy_id, marker: true });
       marker.bindPopup(popupHtml(copy), { autoPan: false });
       marker.on("click", () => focusCopy(copy.copy_id));
+      marker.on("mouseover", () => hoverCopy(copy.copy_id));
+      marker.on("mouseout", () => hoverCopy(null));
       marker.bindTooltip(`${copy.title || "Ohne Titel"} · ${location.station.location_label}${location.inferred ? " · Annäherung / letzter Nachweis" : ""}${location.station.display_uncertainty ? " · " + location.station.display_uncertainty : ""}`, { direction: "top", opacity: .94 });
       bounds.push(point(location.station));
     }

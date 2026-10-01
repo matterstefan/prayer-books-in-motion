@@ -2,12 +2,12 @@
 
 const CURRENT_YEAR = 2026;
 const DATA_URLS = {
-  copies: "data/derived/mei-copies.csv",
-  stations: "data/derived/mei-itinerary-stations-resolved.csv",
+  copies: "data/expanded/tables/mei-copies.csv",
+  stations: "data/expanded/tables/mei-itinerary-stations-resolved.csv",
 };
 
-const languageLabels = { lat: "Latein", dut: "Niederländisch", ita: "Italienisch", ger: "Deutsch", chu: "Kirchenslawisch" };
-const stationLabels = { print_place: "Druckort", provenance_place: "Provenienzstation", current_holding: "Heutiger Aufbewahrungsort" };
+const languageLabels = { lat: "Latein", dut: "Niederländisch", ita: "Italienisch", ger: "Deutsch", chu: "Kirchenslawisch", frm: "Mittelfranzösisch", fre: "Französisch", eng: "Englisch", spa: "Spanisch" };
+const stationLabels = { print_place: "Druckort", provenance_place: "Provenienzstation", current_holding: "Heutiger Aufbewahrungsort", last_known: "Letzter bekannter Aufenthaltsort" };
 const unresolvedLabels = { ambiguous: "mehrdeutig", country_only: "nur Land bekannt", needs_review: "weitere Prüfung nötig", non_geographic: "keine geografische Angabe" };
 
 const state = {
@@ -60,9 +60,9 @@ function escapeHtml(value) {
 }
 
 function directCopy(copy) { return copy.relationship_types.split(" | ").includes("direct"); }
-function hasPoint(station) { return station.latitude !== "" && station.longitude !== ""; }
+function hasPoint(station) { return station.latitude !== "" && station.longitude !== "" && Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude)) && Math.abs(Number(station.latitude)) <= 90 && Math.abs(Number(station.longitude)) <= 180; }
 function point(station) { return [Number(station.latitude), Number(station.longitude)]; }
-function numeric(value) { return value === "" ? null : Number(value); }
+function numeric(value) { return value == null || value === "" || !Number.isFinite(Number(value)) ? null : Number(value); }
 function copyStations(copyId) { return state.stationsByCopy.get(copyId) || []; }
 function printStation(copyId) { return copyStations(copyId).find(s => s.station_type === "print_place"); }
 function samePoint(first, second) {
@@ -74,7 +74,7 @@ function compactStationsForDisplay(copyId) {
   const compacted = [];
   for (const station of copyStations(copyId)) {
     const previous = compacted.at(-1);
-    if (station.station_type === "current_holding" &&
+    if (["current_holding", "last_known"].includes(station.station_type) &&
         previous?.station_type === "provenance_place" && samePoint(previous, station)) {
       compacted[compacted.length - 1] = { ...station, mergedProvenance: previous };
     } else {
@@ -94,39 +94,42 @@ function compactMappedRoute(stations) {
 }
 
 function stationAnchor(station) {
+  if (station.date_warning) return null;
   if (station.station_type === "current_holding") return numeric(station.observation_date.slice(0, 4)) || CURRENT_YEAR;
   return numeric(station.time_start) ?? numeric(station.time_end);
 }
 
 function locationAtYear(copyId, year) {
-  const stations = copyStations(copyId).filter(hasPoint);
+  const all = copyStations(copyId);
+  const birth = stationAnchor(printStation(copyId) || {});
+  if (birth !== null && year < birth) return null;
   if (year === CURRENT_YEAR) {
-    const current = stations.find(s => s.station_type === "current_holding");
-    return current ? { station: current, inferred: false } : null;
+    const current = all.find(s => s.station_type === "current_holding");
+    if (current) return hasPoint(current) ? { station: current, inferred: Boolean(current.display_uncertainty) } : null;
+    const last = all.find(s => s.station_type === "last_known");
+    return last && hasPoint(last) ? { station: last, inferred: true } : null;
   }
-  const exact = stations.filter(station => {
-    if (station.station_type === "current_holding") return false;
-    const start = numeric(station.time_start);
-    const end = numeric(station.time_end);
-    if (start === null && end === null) return false;
-    return (start === null || start <= year) && (end === null || year <= end);
-  }).sort((a, b) => Number(b.source_order) - Number(a.source_order));
-  if (exact.length) return { station: exact[0], inferred: false };
-  const earlier = stations.filter(station => station.station_type !== "current_holding" && stationAnchor(station) !== null && stationAnchor(station) <= year)
-    .sort((a, b) => stationAnchor(b) - stationAnchor(a) || Number(b.source_order) - Number(a.source_order));
-  return earlier.length ? { station: earlier[0], inferred: true } : null;
+  // Follow source order. A later unlocated event interrupts any carried location.
+  const eligible = all.filter(s => s.station_type !== "current_holding" && !s.date_warning && stationAnchor(s) !== null && stationAnchor(s) <= year);
+  const latest = eligible.at(-1);
+  if (!latest || !hasPoint(latest)) return null;
+  const start = numeric(latest.time_start), end = numeric(latest.time_end);
+  const bounded = start !== null && end !== null && start <= year && year <= end;
+  return { station: latest, inferred: !bounded || Boolean(latest.display_uncertainty) };
 }
 
 function routeAtYear(copyId, year) {
-  const stations = copyStations(copyId).filter(hasPoint);
-  if (year === CURRENT_YEAR) return stations;
-  return stations.filter((station, index) => {
-    if (station.station_type === "current_holding") return false;
-    const anchor = stationAnchor(station);
-    if (anchor !== null) return anchor <= year;
-    const later = stations.slice(index + 1).map(stationAnchor).find(value => value !== null);
-    return later !== undefined && later <= year;
-  });
+  const stations = copyStations(copyId);
+  const birth = stationAnchor(printStation(copyId) || {});
+  if (birth !== null && year < birth) return [];
+  if (year === CURRENT_YEAR) return stations.filter(hasPoint);
+  return stations.filter(station => station.station_type !== "current_holding" &&
+    !station.date_warning && stationAnchor(station) !== null && stationAnchor(station) <= year && hasPoint(station));
+}
+
+function holdingLabel(copy) {
+  return ["Historical Copy", "Trade Copy"].includes(copy.holding_institution_name)
+    ? "Heutiger Aufenthaltsort unbekannt" : copy.holding_institution_name || "Aufbewahrungsort nicht angegeben";
 }
 
 function colorFor(id) {
@@ -138,13 +141,13 @@ function colorFor(id) {
 
 function printYear(copy) {
   const station = printStation(copy.copy_id);
-  if (!station) return "ohne Datierung";
+  if (!station || (!station.time_start && !station.time_end)) return "ohne Datierung";
   return station.time_start === station.time_end ? station.time_start : [station.time_start, station.time_end].filter(Boolean).join("–");
 }
 
 function searchable(copy) {
   const station = printStation(copy.copy_id);
-  return [copy.title, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label].join(" ").toLocaleLowerCase("de");
+  return [copy.title, copy.holding_institution_name, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label].join(" ").toLocaleLowerCase("de");
 }
 
 function matchesFilters(copy) {
@@ -165,7 +168,7 @@ function routeSummary(copyId) {
 function popupHtml(copy) {
   const station = printStation(copy.copy_id);
   return `<h3>${escapeHtml(copy.title || "Ohne Titel")}</h3>
-    <p class="popup-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")}, ${escapeHtml(printYear(copy))}<br>${escapeHtml(copy.holding_institution_name || "Aufbewahrungsort nicht angegeben")} · ${escapeHtml(copy.shelfmark || "ohne Signatur")}</p>
+    <p class="popup-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")}, ${escapeHtml(printYear(copy))}<br>${escapeHtml(holdingLabel(copy))} · ${escapeHtml(copy.shelfmark || "ohne Signatur")}</p>
     <p class="popup-route">${escapeHtml(routeSummary(copy.copy_id))}</p>
     <button class="popup-button" type="button" data-track-id="${escapeHtml(copy.copy_id)}">Druck verfolgen</button>`;
 }
@@ -189,7 +192,7 @@ function renderMap({ fit = false } = {}) {
     const coordinates = route.map(point);
     coordinates.forEach(value => bounds.push(value));
     if (coordinates.length > 1) {
-      const line = L.polyline(coordinates, { color, weight: 3, opacity: .48, lineCap: "round" }).addTo(routeLayer);
+      const line = L.polyline(coordinates, { color, weight: 3, opacity: .48, dashArray: "6 5", lineCap: "round" }).addTo(routeLayer);
       line.bindPopup(popupHtml(copy));
       line.on("mouseover", () => line.setStyle({ weight: 6, opacity: .9 }));
       line.on("mouseout", () => line.setStyle({ weight: 3, opacity: .48 }));
@@ -198,19 +201,20 @@ function renderMap({ fit = false } = {}) {
     if (location) {
       located += 1;
       const marker = L.circleMarker(point(location.station), {
-        radius: 6,
+        radius: location.station.spatial_precision === "country" ? 11 : 6,
+        dashArray: location.station.spatial_precision === "country" ? "3 3" : null,
         color,
         weight: 2,
         fillColor: location.inferred ? "#ffffff" : color,
         fillOpacity: 1
       }).addTo(locationLayer);
       marker.bindPopup(popupHtml(copy));
-      marker.bindTooltip(`${copy.title || "Ohne Titel"} · ${location.station.location_label}`, { direction: "top", opacity: .94 });
+      marker.bindTooltip(`${copy.title || "Ohne Titel"} · ${location.station.location_label}${location.inferred ? " · Annäherung / letzter Nachweis" : ""}${location.station.display_uncertainty ? " · " + location.station.display_uncertainty : ""}`, { direction: "top", opacity: .94 });
       bounds.push(point(location.station));
     }
   }
 
-  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} im Jahr ${state.year} verortet · ${mappedStations} dargestellte Wegpunkte`;
+  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} mit Kartenpunkt für ${state.year} · ${mappedStations} dargestellte Wegpunkte`;
   els["map-message"].hidden = copies.length > 0;
   els["map-message"].textContent = copies.length ? "" : "Für diese Auswahl sind keine Drucke markiert.";
   if (fit && bounds.length) map.fitBounds(bounds, { padding: [34, 34], maxZoom: 6 });
@@ -224,7 +228,7 @@ function renderList() {
     return `<div class="print-card ${checked ? "" : "is-unselected"}" data-copy-card="${escapeHtml(copy.copy_id)}">
       <input type="checkbox" data-copy-select="${escapeHtml(copy.copy_id)}" aria-label="Druck anzeigen: ${escapeHtml(copy.title || copy.copy_id)}" ${checked ? "checked" : ""}>
       <button class="print-card-body" type="button" data-copy-detail="${escapeHtml(copy.copy_id)}"><span class="print-title">${escapeHtml(copy.title || "Ohne Titel")}</span>
-      <span class="print-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br>${escapeHtml(copy.holding_institution_name || "Aufbewahrungsort nicht angegeben")} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
+      <span class="print-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br>${escapeHtml(holdingLabel(copy))} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
       </button></div>`;
   }).join("");
 }
@@ -246,7 +250,7 @@ function stationTime(station) {
     const current = `Stand ${station.observation_date || CURRENT_YEAR}`;
     if (!station.mergedProvenance) return current;
     const historical = historicalStationTime(station.mergedProvenance);
-    return historical === "nicht datiert" ? current : `als Bibliotheksstation ${historical}; ${current}`;
+    return historical === "nicht datiert" ? current : `Ortsnachweis ${historical}; ${current}`;
   }
   return historicalStationTime(station);
 }
@@ -264,18 +268,19 @@ function openDetail(copyId) {
       <dt>ISTC</dt><dd><a href="https://data.cerl.org/istc/${escapeHtml(copy.host_istc_id)}" target="_blank" rel="noopener">${escapeHtml(copy.host_istc_id)}</a></dd>
       <dt>GW</dt><dd>${escapeHtml(copy.gw_references || "nicht angegeben")}</dd>
       <dt>Sprache</dt><dd>${escapeHtml(languageLabels[copy.language] || copy.language || "nicht angegeben")}</dd>
-      <dt>Aufbewahrung</dt><dd>${escapeHtml(copy.holding_institution_name || "nicht angegeben")}</dd>
+      <dt>Aufbewahrung</dt><dd>${escapeHtml(holdingLabel(copy))}</dd>
     </dl>
     <h3>Überlieferte Stationen</h3>
+    <p class="method-note">Die Liste zeigt die Gesamtfolge. Zeitliche Lücken, undatierte Stationen und fehlende Ortsangaben erlauben keinen lückenlosen Aufenthaltsnachweis.</p>
     <ol class="station-list">${stations.map(station => {
-      const unresolved = unresolvedLabels[station.location_resolution_status];
+      const unresolved = station.date_warning || station.display_uncertainty || unresolvedLabels[station.location_resolution_status];
       return `<li class="station-item"><span class="station-type">${escapeHtml(stationLabels[station.station_type] || station.station_type)}</span>
         <span class="station-place">${escapeHtml(station.location_label || station.place_name || "Ort nicht angegeben")}</span>
         <span class="station-time">${escapeHtml(stationTime(station))}</span>
         ${unresolved ? `<span class="uncertain-badge">${escapeHtml(unresolved)}</span>` : ""}
-        ${station.mergedProvenance ? `<span class="station-note">Orts- und Institutionsangabe aus zwei aufeinanderfolgenden MEI-Stationen zusammengeführt.</span>` : ""}
+        ${station.mergedProvenance ? `<span class="station-note">Gleicher Kartenort zusammengefasst; der Ortsnachweis datiert nicht automatisch den Zugang zur heutigen Institution.</span>` : ""}
         ${station.location_resolution_note ? `<span class="station-note">${escapeHtml(station.location_resolution_note)}</span>` : ""}
-        ${station.source_url ? `<a class="station-source" href="${escapeHtml(station.source_url)}" target="_blank" rel="noopener">Quelle: ${escapeHtml(station.source_catalogue)}</a>` : ""}
+        ${(station.source_url || "").split(" | ").filter(url => /^https?:\/\//.test(url)).map(url => `<a class="station-source" href="${escapeHtml(url)}" target="_blank" rel="noopener">Quelle: ${escapeHtml(station.source_catalogue)}</a>`).join(" ")}
       </li>`;
     }).join("")}</ol>`;
   els["about-panel"].classList.remove("is-open");

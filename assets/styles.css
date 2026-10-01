@@ -103,7 +103,7 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .map-legend span { display: inline-flex; align-items: center; gap: .35rem; }
 .legend-dot { width: .72rem; height: .72rem; display: inline-block; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--accent); }
 .legend-dot.inferred { background: #fff; }
-.legend-line { width: 1.35rem; height: 0; border-top: 3px solid var(--accent); opacity: .7; }
+.legend-line { width: 1.35rem; height: 0; border-top: 3px dashed var(--accent); opacity: .7; }
 .map-message { position: absolute; z-index: 650; top: 1rem; left: 50%; transform: translateX(-50%); max-width: 28rem; padding: .7rem .9rem; border-radius: .35rem; background: rgba(23,33,43,.9); color: #fff; text-align: center; }
 
 .detail-panel, .about-panel {

@@ -17,14 +17,14 @@ Stationen bleiben von lokalen Punkten getrennt. Dies ist eine Bündelung von
 Kartenpunkten, keine neue Normierung von Ortsnamen oder Institutionen.
 
 Die Kreisfläche ist proportional zur Zahl unterschiedlicher Exemplare
-(Radius = 6 × Quadratwurzel der Anzahl). Gefüllt: im Quellenzeitraum bzw.
-aktueller Nachweis. Offen: Fortschreibung oder unsichere Ortszuweisung.
-Gold: beide Einstufungen am selben Punkt. Gestrichelter Rand: Länderpunkt.
+(Radius = 6 × Quadratwurzel der Anzahl). Alle Kreise sind einheitlich weinrot;
+eine qualitative Einstufung anhand offener oder geschlossener Datierungen entfällt.
+Gestrichelter Rand: Länderpunkt.
 Quellenzeiträume können selbst ungefähr sein; keine Einstufung beweist einen
 ununterbrochenen Aufenthalt. Die Zahlen beschreiben die ausgewählten
 Katalognachweise, keine historische Gesamtverteilung.
 
-Popups nennen die Anzahl je Einstufung und für jedes Exemplar Titel,
+Popups nennen die Gesamtanzahl und für jedes Exemplar Titel,
 Druckort/-jahr, heutige Bibliothek/Signatur, zugewiesene Station und deren
 Datierung. «Druck verfolgen» öffnet die vorhandene Detailansicht.
 

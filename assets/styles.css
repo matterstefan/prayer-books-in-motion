@@ -172,3 +172,10 @@ select { padding: .45rem 2rem .45rem .55rem; }
 @media (prefers-reduced-motion: reduce) {
   .detail-panel, .about-panel { transition: none; }
 }
+
+.view-switch { display: flex; gap: .3rem; margin-bottom: .8rem; }
+.view-switch button { flex: 1; padding: .5rem .3rem; border: 1px solid var(--line); border-radius: .35rem; background: #fff; color: var(--ink); }
+.view-switch button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.legend-items { display: flex; flex-wrap: wrap; gap: .4rem .85rem; }
+.legend-items[hidden] { display: none; }
+.legend-dot.mixed { background: #e9bc69; border: 2px solid #75132f; }

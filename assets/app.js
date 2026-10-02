@@ -11,6 +11,7 @@ const stationLabels = { print_place: "Druckort", provenance_place: "Provenienzst
 const unresolvedLabels = { ambiguous: "mehrdeutig", country_only: "nur Land bekannt", needs_review: "weitere Prüfung nötig", non_geographic: "keine geografische Angabe" };
 
 const state = {
+  view: "connections",
   year: CURRENT_YEAR,
   copies: [],
   stationsByCopy: new Map(),
@@ -29,7 +30,7 @@ const els = Object.fromEntries([
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
   "detail-panel", "detail-content", "detail-close", "about-panel", "about-button",
-  "about-close", "map-message", "clear-focus"
+  "about-close", "map-message", "clear-focus", "view-connections", "view-locations", "connection-legend", "location-legend"
 ].map(id => [id, document.getElementById(id)]));
 
 const map = L.map("map", { zoomControl: true, minZoom: 2, worldCopyJump: true }).setView([48.8, 8.5], 4);
@@ -160,7 +161,7 @@ function updateRouteFocus() {
     item.layer.setStyle({ weight: active ? (item.marker ? 3 : Math.max(6, item.baseWeight || 3)) : (item.marker ? 2 : item.baseWeight || 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
     if (active) item.layer.bringToFront();
   }
-  if (highlighted) for (const id of highlighted) {
+  if (highlighted && state.view === "connections") for (const id of highlighted) {
     const route = routeAtYear(id, state.year);
     for (let i = 1; i < route.length; i++) {
       if (samePoint(route[i-1], route[i])) continue;
@@ -267,10 +268,76 @@ function clearMapLayers() {
   highlightLayer.clearLayers();
 }
 
+function groupLocations(copies, year) {
+  const groups = new Map();
+  for (const copy of copies) {
+    const location = locationAtYear(copy.copy_id, year);
+    if (!location) continue;
+    const station = location.station;
+    const key = point(station).map(n => n.toFixed(5)).join(",") + "|" + (station.spatial_precision === "country" ? "country" : "locality");
+    if (!groups.has(key)) groups.set(key, { station, entries: new Map() });
+    groups.get(key).entries.set(copy.copy_id, { copy, ...location });
+  }
+  return [...groups.values()];
+}
+
+function locationPopup(group) {
+  const entries = [...group.entries.values()];
+  const inferred = entries.filter(e => e.inferred).length;
+  const names = [...new Set(entries.map(e => e.station.preferred_placename || e.station.place_name || e.station.location_label))];
+  return `<h3>${names.map(escapeHtml).join(" / ")} · ${state.year}</h3>
+    <p>${entries.length} Exemplare: ${entries.length - inferred} im Quellenzeitraum / aktueller Nachweis; ${inferred} Annäherung / letzter Nachweis.</p>
+    <p class="method-note">Gemeinsamer Kartenpunkt, kein Beleg für gleichzeitigen Besitz oder ununterbrochenen Aufenthalt.</p>
+    <div class="bundle-list" tabindex="0" aria-label="Drucke an diesem Kartenpunkt">${entries.map(({copy, station, inferred}) => `<div class="bundle-copy">${popupHtml(copy)}
+      <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}<br>${inferred ? "Annäherung / letzter Nachweis" : "Im Quellenzeitraum / aktueller Nachweis"}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
+}
+
+function renderLocations(copies, fit) {
+  const groups = groupLocations(copies, state.year);
+  let located = 0, inferredCount = 0;
+  // Large circles first so smaller nearby circles remain selectable.
+  groups.sort((a, b) => b.entries.size - a.entries.size);
+  for (const group of groups) {
+    const entries = [...group.entries.values()], ids = new Set(group.entries.keys());
+    const inferred = entries.filter(e => e.inferred).length;
+    located += entries.length; inferredCount += inferred;
+    const mixed = inferred > 0 && inferred < entries.length;
+    const marker = L.circleMarker(point(group.station), {
+      radius: 6 * Math.sqrt(entries.length), color: "#75132f", weight: 2,
+      fillColor: mixed ? "#e9bc69" : inferred ? "#ffffff" : "#75132f", fillOpacity: 1,
+      dashArray: group.station.spatial_precision === "country" ? "3 3" : null,
+      bubblingMouseEvents: false
+    }).addTo(locationLayer);
+    state.layers.push({layer: marker, copyIds: ids, marker: true});
+    marker.bindPopup(locationPopup(group), {autoPan: false, maxWidth: 380});
+    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} Exemplare · ${inferred} Annäherungen / letzte Nachweise`);
+    marker.on("click", () => { state.focusedCopy = null; state.focusedBundle = ids; state.hoveredBundle = null; updateRouteFocus(); });
+    marker.on("mouseover", () => { state.hoveredBundle = ids; updateRouteFocus(); });
+    marker.on("mouseout", () => { state.hoveredBundle = null; updateRouteFocus(); });
+  }
+  updateRouteFocus();
+  const notPrinted = copies.filter(c => { const birth = stationAnchor(printStation(c.copy_id) || {}); return birth !== null && birth > state.year; }).length;
+  els["result-summary"].textContent = `${copies.length} Drucke ausgewählt · ${located} an ${groups.length} Kartenpunkten für ${state.year} (${inferredCount} Annäherungen / letzte Nachweise) · ${notPrinted} noch nicht gedruckt · ${copies.length - located - notPrinted} ohne zuweisbaren Ort`;
+  els["map-message"].hidden = groups.length > 0;
+  els["map-message"].textContent = copies.length ? "Für dieses Jahr und diese Auswahl ist kein Kartenpunkt zuweisbar." : "Für diese Auswahl sind keine Drucke markiert.";
+  if (fit && groups.length) map.fitBounds(groups.map(g => point(g.station)), {padding: [34, 34], maxZoom: 6});
+}
+
+function setMapView(view) {
+  state.view = view;
+  map.closePopup();
+  els["view-connections"].setAttribute("aria-pressed", String(view === "connections"));
+  els["view-locations"].setAttribute("aria-pressed", String(view === "locations"));
+  els["connection-legend"].hidden = view !== "connections";
+  els["location-legend"].hidden = view !== "locations";
+  render({list: false});
+}
+
 function renderMap({ fit = false } = {}) {
   clearMapLayers();
   const copies = displayedCopies();
   if (!copies.some(c => c.copy_id === state.focusedCopy)) state.focusedCopy = null;
+  if (state.view === "locations") { renderLocations(copies, fit); return; }
   const bounds = [];
   let located = 0;
   let mappedStations = 0;
@@ -409,6 +476,8 @@ function populateFilters() {
 }
 
 function bindEvents() {
+  els["view-connections"].addEventListener("click", () => setMapView("connections"));
+  els["view-locations"].addEventListener("click", () => setMapView("locations"));
   map.on("click", () => { focusCopy(null); closePanel(els["detail-panel"]); });
   els["clear-focus"].addEventListener("click", () => { focusCopy(null); map.closePopup(); closePanel(els["detail-panel"]); });
   els["year-slider"].addEventListener("input", event => { state.year = Number(event.target.value); render({ list: false }); });

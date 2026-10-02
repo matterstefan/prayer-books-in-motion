@@ -21,6 +21,8 @@ const state = {
   layers: [],
   focusedCopy: null,
   hoveredCopy: null,
+  focusedBundle: null,
+  hoveredBundle: null,
 };
 
 const els = Object.fromEntries([
@@ -37,6 +39,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
 const locationLayer = L.layerGroup().addTo(map);
+const highlightLayer = L.layerGroup().addTo(map);
 
 function parseCsv(text) {
   const rows = [];
@@ -149,25 +152,68 @@ function segmentEvidence(from, to, all) {
 }
 
 function updateRouteFocus() {
-  const highlightedCopy = state.focusedCopy || state.hoveredCopy;
+  const highlighted = state.focusedCopy ? new Set([state.focusedCopy]) : state.focusedBundle || (state.hoveredCopy ? new Set([state.hoveredCopy]) : state.hoveredBundle);
+  highlightLayer.clearLayers();
   for (const item of state.layers) {
-    const active = item.copyId === highlightedCopy;
-    const muted = highlightedCopy && !active;
-    item.layer.setStyle({ weight: active ? (item.marker ? 3 : 6) : (item.marker ? 2 : 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
+    const active = highlighted && [...(item.copyIds || [item.copyId])].some(id => highlighted.has(id));
+    const muted = highlighted && !active;
+    item.layer.setStyle({ weight: active ? (item.marker ? 3 : Math.max(6, item.baseWeight || 3)) : (item.marker ? 2 : item.baseWeight || 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
     if (active) item.layer.bringToFront();
   }
-  els["clear-focus"].hidden = !state.focusedCopy;
+  if (highlighted) for (const id of highlighted) {
+    const route = routeAtYear(id, state.year);
+    for (let i = 1; i < route.length; i++) {
+      if (samePoint(route[i-1], route[i])) continue;
+      const evidence = segmentEvidence(route[i-1], route[i], copyStations(id));
+      L.polyline([point(route[i-1]), point(route[i])], {color:colorFor(id),weight:5,opacity:.95,dashArray:evidence.dashed?"6 5":null,interactive:false}).addTo(highlightLayer);
+    }
+  }
+  els["clear-focus"].hidden = !state.focusedCopy && !state.focusedBundle;
 }
 
 function focusCopy(copyId) {
   state.focusedCopy = copyId;
   state.hoveredCopy = null;
+  state.focusedBundle = null;
+  state.hoveredBundle = null;
   updateRouteFocus();
 }
 
 function hoverCopy(copyId) {
   state.hoveredCopy = copyId;
+  state.hoveredBundle = null;
   updateRouteFocus();
+}
+
+function bundleRoutes(copies, year) {
+  const groups = new Map();
+  const keyFor = s => point(s).map(n => n.toFixed(5)).join(",");
+  for (const copy of copies) {
+    const route = routeAtYear(copy.copy_id, year);
+    for (let i=1;i<route.length;i++) {
+      const from=route[i-1],to=route[i],a=keyFor(from),b=keyFor(to);
+      if(a===b) continue;
+      // Opposite directions share geometry, but remain separately labelled in the popup.
+      const key=[a,b].sort().join("|");
+      if(!groups.has(key)) groups.set(key,{key,from,to,entries:new Map()});
+      const group=groups.get(key),id=copy.copy_id;
+      if(!group.entries.has(id)) group.entries.set(id,{copy,legs:[]});
+      group.entries.get(id).legs.push({from,to,evidence:segmentEvidence(from,to,copyStations(id))});
+    }
+  }
+  return [...groups.values()];
+}
+
+function bundlePopup(group) {
+  const entries=[...group.entries.values()];
+  const name=s=>s.preferred_placename || s.place_name || s.location_label;
+  return `<h3>${escapeHtml(name(group.from))} ↔ ${escapeHtml(name(group.to))}</h3>
+    <p>${entries.length} ${entries.length===1?"Exemplar":"Exemplare"} in dieser Auswahl</p>
+    <p class="method-note">Gemeinsame Ortsverbindung, keine gemeinsam belegte Reise. Richtung und Einstufung stehen beim jeweiligen Druck.</p>
+    <div class="bundle-list" tabindex="0" aria-label="Beteiligte Drucke">${entries.map(({copy,legs})=>`<div class="bundle-copy">
+      ${popupHtml(copy)}
+      <p class="popup-meta">${[...new Set(legs.map(l=>`${name(l.from)} → ${name(l.to)}: ${l.evidence.description}`))].map(escapeHtml).join("<br>")}</p>
+    </div>`).join("")}</div>`;
 }
 
 function colorFor(id) {
@@ -213,9 +259,12 @@ function popupHtml(copy) {
 
 function clearMapLayers() {
   state.hoveredCopy = null;
+  state.hoveredBundle = null;
+  state.focusedBundle = null;
   state.layers = [];
   routeLayer.clearLayers();
   locationLayer.clearLayers();
+  highlightLayer.clearLayers();
 }
 
 function renderMap({ fit = false } = {}) {
@@ -232,16 +281,6 @@ function renderMap({ fit = false } = {}) {
     mappedStations += route.length;
     const coordinates = route.map(point);
     coordinates.forEach(value => bounds.push(value));
-    for (let i = 1; i < route.length; i += 1) {
-      if (samePoint(route[i - 1], route[i])) continue;
-      const evidence = segmentEvidence(route[i - 1], route[i], copyStations(copy.copy_id));
-      const line = L.polyline([point(route[i - 1]), point(route[i])], { color, weight: 3, opacity: .55, dashArray: evidence.dashed ? "6 5" : null, lineCap: "round", bubblingMouseEvents: false }).addTo(routeLayer);
-      state.layers.push({ layer: line, copyId: copy.copy_id, marker: false });
-      line.bindPopup(popupHtml(copy) + `<p class="method-note">${escapeHtml(evidence.description)}. Schematische Verbindung, keine rekonstruierte Reiseroute.</p>`, { autoPan: false });
-      line.on("click", () => focusCopy(copy.copy_id));
-      line.on("mouseover", () => hoverCopy(copy.copy_id));
-      line.on("mouseout", () => hoverCopy(null));
-    }
     const location = locationAtYear(copy.copy_id, state.year);
     if (location) {
       located += 1;
@@ -264,6 +303,20 @@ function renderMap({ fit = false } = {}) {
     }
   }
 
+  const bundles = bundleRoutes(copies, state.year);
+  for (const group of bundles) {
+    const ids=new Set(group.entries.keys()),single=ids.size===1;
+    const legs=[...group.entries.values()].flatMap(e=>e.legs);
+    const dashed=legs.some(l=>l.evidence.dashed);
+    const weight=2+Math.log2(ids.size+1)*1.5;
+    const line=L.polyline([point(group.from),point(group.to)],{color:single?colorFor([...ids][0]):"#596674",weight,opacity:.55,dashArray:dashed?"6 5":null,bubblingMouseEvents:false}).addTo(routeLayer);
+    state.layers.push({layer:line,copyIds:ids,copyId:single?[...ids][0]:null,baseWeight:weight,marker:false});
+    line.bindPopup(bundlePopup(group),{autoPan:false,maxWidth:380});
+    line.bindTooltip(`${ids.size} ${single?"Exemplar":"Exemplare"} · ${group.from.preferred_placename || group.from.location_label} ↔ ${group.to.preferred_placename || group.to.location_label}`);
+    line.on("click",()=>{state.focusedCopy=single?[...ids][0]:null;state.focusedBundle=single?null:ids;state.hoveredCopy=null;state.hoveredBundle=null;updateRouteFocus()});
+    line.on("mouseover",()=>{state.hoveredCopy=null;state.hoveredBundle=ids;updateRouteFocus()});
+    line.on("mouseout",()=>{state.hoveredBundle=null;updateRouteFocus()});
+  }
   updateRouteFocus();
 
   els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} mit Kartenpunkt für ${state.year} · ${mappedStations} dargestellte Wegpunkte`;

@@ -148,6 +148,10 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .popup-route { max-height: 5.5rem; overflow: hidden; color: var(--muted); font-size: .78rem; }
 .popup-button { margin-top: .55rem; padding: .42rem .58rem; border-radius: .3rem; background: var(--accent); color: #fff; font-weight: 720; }
 .popup-button:hover { background: var(--accent-dark); }
+.bundle-list { max-height: 300px; max-height: min(300px, 45vh); overflow-y: auto; scrollbar-gutter: stable; }
+.bundle-copy { padding: .65rem 0; border-top: 1px solid var(--line); }
+.bundle-copy .popup-route { display: none; }
+.bundle-list:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
 

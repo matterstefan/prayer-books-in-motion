@@ -283,41 +283,38 @@ function groupLocations(copies, year) {
 
 function locationPopup(group) {
   const entries = [...group.entries.values()];
-  const inferred = entries.filter(e => e.inferred).length;
   const names = [...new Set(entries.map(e => e.station.preferred_placename || e.station.place_name || e.station.location_label))];
   return `<h3>${names.map(escapeHtml).join(" / ")} · ${state.year}</h3>
-    <p>${entries.length} Exemplare: ${entries.length - inferred} im Quellenzeitraum / aktueller Nachweis; ${inferred} Annäherung / letzter Nachweis.</p>
+    <p>${entries.length} Exemplare am letzten zuweisbaren Ort bis ${state.year}.</p>
     <p class="method-note">Gemeinsamer Kartenpunkt, kein Beleg für gleichzeitigen Besitz oder ununterbrochenen Aufenthalt.</p>
-    <div class="bundle-list" tabindex="0" aria-label="Drucke an diesem Kartenpunkt">${entries.map(({copy, station, inferred}) => `<div class="bundle-copy">${popupHtml(copy)}
-      <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}<br>${inferred ? "Annäherung / letzter Nachweis" : "Im Quellenzeitraum / aktueller Nachweis"}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
+    <div class="bundle-list" tabindex="0" aria-label="Drucke an diesem Kartenpunkt">${entries.map(({copy, station}) => `<div class="bundle-copy">${popupHtml(copy)}
+      <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
 
 function renderLocations(copies, fit) {
   const groups = groupLocations(copies, state.year);
-  let located = 0, inferredCount = 0;
+  let located = 0;
   // Large circles first so smaller nearby circles remain selectable.
   groups.sort((a, b) => b.entries.size - a.entries.size);
   for (const group of groups) {
     const entries = [...group.entries.values()], ids = new Set(group.entries.keys());
-    const inferred = entries.filter(e => e.inferred).length;
-    located += entries.length; inferredCount += inferred;
-    const mixed = inferred > 0 && inferred < entries.length;
+    located += entries.length;
     const marker = L.circleMarker(point(group.station), {
       radius: 6 * Math.sqrt(entries.length), color: "#75132f", weight: 2,
-      fillColor: mixed ? "#e9bc69" : inferred ? "#ffffff" : "#75132f", fillOpacity: 1,
+      fillColor: "#75132f", fillOpacity: 1,
       dashArray: group.station.spatial_precision === "country" ? "3 3" : null,
       bubblingMouseEvents: false
     }).addTo(locationLayer);
     state.layers.push({layer: marker, copyIds: ids, marker: true});
     marker.bindPopup(locationPopup(group), {autoPan: false, maxWidth: 380});
-    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} Exemplare · ${inferred} Annäherungen / letzte Nachweise`);
+    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} Exemplare`);
     marker.on("click", () => { state.focusedCopy = null; state.focusedBundle = ids; state.hoveredBundle = null; updateRouteFocus(); });
     marker.on("mouseover", () => { state.hoveredBundle = ids; updateRouteFocus(); });
     marker.on("mouseout", () => { state.hoveredBundle = null; updateRouteFocus(); });
   }
   updateRouteFocus();
   const notPrinted = copies.filter(c => { const birth = stationAnchor(printStation(c.copy_id) || {}); return birth !== null && birth > state.year; }).length;
-  els["result-summary"].textContent = `${copies.length} Drucke ausgewählt · ${located} an ${groups.length} Kartenpunkten für ${state.year} (${inferredCount} Annäherungen / letzte Nachweise) · ${notPrinted} noch nicht gedruckt · ${copies.length - located - notPrinted} ohne zuweisbaren Ort`;
+  els["result-summary"].textContent = `${copies.length} Drucke ausgewählt · ${located} an ${groups.length} Kartenpunkten für ${state.year} · ${notPrinted} noch nicht gedruckt · ${copies.length - located - notPrinted} ohne zuweisbaren Ort`;
   els["map-message"].hidden = groups.length > 0;
   els["map-message"].textContent = copies.length ? "Für dieses Jahr und diese Auswahl ist kein Kartenpunkt zuweisbar." : "Für diese Auswahl sind keine Drucke markiert.";
   if (fit && groups.length) map.fitBounds(groups.map(g => point(g.station)), {padding: [34, 34], maxZoom: 6});

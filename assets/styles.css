@@ -178,4 +178,3 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .view-switch button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 .legend-items { display: flex; flex-wrap: wrap; gap: .4rem .85rem; }
 .legend-items[hidden] { display: none; }
-.legend-dot.mixed { background: #e9bc69; border: 2px solid #75132f; }

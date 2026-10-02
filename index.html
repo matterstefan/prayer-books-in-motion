@@ -7,7 +7,7 @@
     <title>Prayer Books in Motion – Drucke in Bewegung</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261001-6">
+    <link rel="stylesheet" href="assets/styles.css?v=20261002-1">
   </head>
   <body>
     <header class="topbar">
@@ -21,6 +21,10 @@
     <main class="workspace">
       <aside class="controls" aria-label="Kartenauswahl">
         <section class="time-panel">
+          <div class="view-switch" role="group" aria-label="Kartenansicht">
+            <button id="view-connections" type="button" aria-pressed="true">Verbindungen</button>
+            <button id="view-locations" type="button" aria-pressed="false">Aufenthaltsorte</button>
+          </div>
           <div class="section-heading">
             <div>
               <p class="eyebrow">Drucke in Bewegung</p>
@@ -59,11 +63,19 @@
         <div id="map" class="map"></div>
         <div class="map-legend" aria-label="Legende">
           <button id="clear-focus" class="text-button" type="button" hidden>Hervorhebung aufheben</button>
+          <div id="connection-legend" class="legend-items">
           <span><i class="legend-dot documented"></i> im Quellenzeitraum</span>
           <span><i class="legend-dot inferred"></i> Annäherung / letzter Nachweis</span>
           <span><i class="legend-line" style="border-top-style: solid"></i> datierte Folge ohne erkennbare Lücke</span>
           <span><i class="legend-line"></i> Lücke / unklare Datierung / unsicherer Ort</span>
           <span>Breitere Linie = mehr Exemplare · Klick zeigt die Drucke</span>
+          </div>
+          <div id="location-legend" class="legend-items" hidden>
+            <span><i class="legend-dot documented"></i> Quellenzeitraum / aktueller Nachweis</span>
+            <span><i class="legend-dot inferred"></i> Annäherung / letzter Nachweis</span>
+            <span><i class="legend-dot mixed"></i> beide Einstufungen am selben Punkt</span>
+            <span>Kreisfläche = Anzahl Exemplare · gestrichelter Rand = Länderpunkt · Klick zeigt die Drucke</span>
+          </div>
         </div>
         <div id="map-message" class="map-message" hidden></div>
       </section>
@@ -83,6 +95,7 @@
         <button id="about-close" class="icon-button" type="button" aria-label="Projektinformation schliessen">×</button>
       </div>
       <h2 id="about-title">Was diese Karte zeigt</h2>
+      <p>Die Ansicht «Aufenthaltsorte» bündelt die für das gewählte Jahr zugewiesenen Exemplare am selben Kartenpunkt. Die Kreisfläche ist proportional zur Anzahl unterschiedlicher Exemplare. Voll gefüllte Kreise stehen für einen Quellenzeitraum oder einen heutigen Nachweis; offene Kreise für fortgeschriebene oder unsichere Zuordnungen, goldene für gemischte Gruppen. Ein Quellenzeitraum kann selbst nur eine ungefähre Datierung sein und beweist keinen ununterbrochenen Aufenthalt. Länderpunkte werden getrennt von Ortsangaben gebündelt. Die Häufigkeiten beschreiben ausschliesslich die ausgewählten Katalognachweise.</p>
       <p>Gemeinsame Verbindungen werden gebündelt. Die Linienbreite wächst gedämpft mit der Zahl unterschiedlicher Exemplare in der aktuellen Auswahl und im gewählten Jahr. Beide Richtungen teilen sich eine Linie; die jeweilige Richtung steht beim Druck im Kontextfenster. Bündel mit mindestens einem unsicheren Abschnitt werden gestrichelt. Diese Häufigkeit beschreibt die vorhandenen Katalogdaten, keinen historischen Verkehrsfluss. Beim Darüberfahren werden die beteiligten Wege hervorgehoben; «Druck verfolgen» wählt daraus ein Exemplar.</p>
       <p>Die Anwendung aggregiert offen zugängliche Daten aus GW, ISTC und MEI. Sie erzeugt keine neuen Katalog- oder Provenienznachweise, sondern erprobt ihre gemeinsame Visualisierung.</p>
       <p>Gerade Linien verbinden belegte Stationen in der überlieferten Reihenfolge; sie behaupten keine konkrete Reiseroute. Der Zeitregler stellt keinen lückenlosen historischen Aufenthaltsnachweis her: Zwischen datierten Stationen wird der zuletzt bekannte Ort lediglich fortgeschrieben.</p>
@@ -91,6 +104,6 @@
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261001-6" defer></script>
+    <script src="assets/app.js?v=20261002-1" defer></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const element=()=>({value:'',textContent:'',innerHTML:'',hidden:false,classList:{add(){},remove(){}},setAttribute(){},focus(){},insertAdjacentHTML(){},addEventListener(){}});
 const elements=new Map();const doc={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},addEventListener(){}};
-const map={setView(){return this},fitBounds(){this.fits=(this.fits||0)+1}};
+const map={setView(){return this},closePopup(){},fitBounds(){this.fits=(this.fits||0)+1}};
 const layer=()=>({addTo(){return this},clearLayers(){},bindPopup(){},bindTooltip(){},on(){},setStyle(style){this.style={...this.style,...style}},bringToFront(){}});
 const context=vm.createContext({console,document:doc,L:{map:()=>map,tileLayer:layer,layerGroup:layer,polyline:layer,circleMarker:layer}});
 vm.runInContext(fs.readFileSync('assets/app.js','utf8').replace(/loadData\(\);\s*$/,''),context);
@@ -64,5 +64,46 @@ assert.equal(segmentEvidence(a,b,[a,b]).dashed,false);
 assert.equal(segmentEvidence(a,{...b,time_start:'1550'},[a,b]).dashed,true);
 assert.equal(segmentEvidence(a,{...b,spatial_precision:'country'},[a,b]).dashed,true);
 assert.equal(segmentEvidence(a,{...b,time_start:''},[a,b]).dashed,true);
+
+focusCopy(null);
+for (const year of [1450,1499,1600,1800,1950,2026]) {
+  state.year=year;
+  const locations=groupLocations(state.copies,year);
+  const ids=locations.flatMap(g=>[...g.entries.keys()]);
+  assert.equal(ids.length,new Set(ids).size);
+  assert.equal(ids.length,state.copies.filter(c=>locationAtYear(c.copy_id,year)).length);
+  setMapView('locations');
+  assert.equal(state.layers.length,locations.length);
+  assert.ok(state.layers.every(l=>l.marker));
+  assert.equal(els['map-message'].hidden,locations.length>0);
+}
+const currentGroups=groupLocations(state.copies,2026);
+assert.equal(currentGroups.reduce((n,g)=>n+g.entries.size,0),484);
+const biggest=currentGroups.sort((a,b)=>b.entries.size-a.entries.size)[0];
+assert.ok(biggest.entries.size>1);
+assert.equal((locationPopup(biggest).match(/data-track-id=/g)||[]).length,biggest.entries.size);
+const focusId=[...biggest.entries.keys()][0];
+openDetail(focusId);
+assert.equal(state.focusedCopy,focusId);
+assert.equal(state.layers.filter(l=>l.layer.style.opacity===1).length,1);
+state.search='bologna';
+const selectedBefore=[...state.selected].join(',');
+state.year=1800;
+setMapView('connections');setMapView('locations');
+assert.equal(state.search,'bologna');assert.equal(state.year,1800);
+assert.equal([...state.selected].join(','),selectedBefore);
+assert.equal(map.fits,undefined);
+assert.equal(els['connection-legend'].hidden,true);
+assert.equal(els['location-legend'].hidden,false);
+state.search='';
+const testCopies=[{copy_id:'test-bounded'},{copy_id:'test-carried'},{copy_id:'test-country'}];
+for(const c of testCopies)state.stationsByCopy.set(c.copy_id,[{...stop('10','20',0),time_start:'1500',time_end:c.copy_id==='test-carried'?'1500':'1600',spatial_precision:c.copy_id==='test-country'?'country':'locality'}]);
+const testGroups=groupLocations([...testCopies,testCopies[0]],1550);
+assert.equal(testGroups.length,2); // Never conflate a country with a locality.
+const mixed=testGroups.find(g=>g.entries.size===2);
+assert.equal([...mixed.entries.values()].filter(e=>e.inferred).length,1);
+testCopies.forEach(c=>state.stationsByCopy.delete(c.copy_id));
+state.selected.clear();render();
+assert.equal(state.layers.length,0);assert.equal(els['map-message'].hidden,false);
 `,context);
 console.log('PASS: full data rendering with Leaflet/DOM stubs; all 484 detail views, six slider years, pre-print dates, historic endpoints, filters, country point, date conflict and viewport.');

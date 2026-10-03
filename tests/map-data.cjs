@@ -8,7 +8,7 @@ vm.runInContext(fs.readFileSync('assets/app.js','utf8').replace(/loadData\(\);\s
 context.copiesText=fs.readFileSync('data/expanded/tables/mei-copies.csv','utf8');context.stationsText=fs.readFileSync('data/expanded/tables/mei-itinerary-stations-resolved.csv','utf8');context.assert=assert;
 vm.runInContext(`
 state.copies=parseCsv(copiesText).filter(directCopy);
-for(const s of parseCsv(stationsText)){if(!state.stationsByCopy.has(s.copy_id))state.stationsByCopy.set(s.copy_id,[]);state.stationsByCopy.get(s.copy_id).push(s)}
+for(const s of parseCsv(stationsText).map(reviewedStation)){if(!state.stationsByCopy.has(s.copy_id))state.stationsByCopy.set(s.copy_id,[]);state.stationsByCopy.get(s.copy_id).push(s)}
 for(const a of state.stationsByCopy.values())a.sort((a,b)=>Number(a.source_order)-Number(b.source_order)||Number(a.place_order_within_source)-Number(b.place_order_within_source));
 state.copies.forEach(c=>state.selected.add(c.copy_id));
 assert.equal(state.copies.length,484);assert.equal(state.selected.size,484);
@@ -105,5 +105,35 @@ assert.equal([...mixed.entries.values()].filter(e=>e.inferred).length,1);
 testCopies.forEach(c=>state.stationsByCopy.delete(c.copy_id));
 state.selected.clear();render();
 assert.equal(state.layers.length,0);assert.equal(els['map-message'].hidden,false);
+const corrected=copyStations('02128182').find(s=>s.station_id==='02128182-p003-loc01');
+assert.equal(corrected.location_label,'Frankreich, genauer Ort unbekannt');
+assert.equal(corrected.source_location_label,'Fort-de-France');
+assert.equal(locationAtYear('02128182',1750).station,corrected);
+assert.ok(!routeAtYear('02128182',2026).some(s=>isArea(s)||excludedDisplayPoint(s)));
+const correctedRoute=routeAtYear('02128182',2026);
+assert.ok(segmentEvidence(correctedRoute[0],correctedRoute[1],copyStations('02128182')).description.includes('Frankreich'));
+for(const stations of state.stationsByCopy.values())for(const station of stations) {
+ if(countryPlaceIds.has(station.place_authority_id))assert.equal(spatialPrecision(station),'country');
+ if(regionPlaceIds.has(station.place_authority_id))assert.equal(spatialPrecision(station),'region');
+ if(station.place_authority_id==='9408659')assert.equal(hasPoint(station),false);
+}
+assert.equal(reviewedStation({...corrected,station_id:'different'}).station_id,'different');
+const sourceSnapshot=JSON.stringify([...state.stationsByCopy]);
+for(const [raw, target] of displayPointAliases) {
+ const [latitude,longitude]=raw.split(',');
+ assert.deepEqual(point({latitude,longitude}),target);
+ assert.ok(samePoint({latitude,longitude},{latitude:String(target[0]),longitude:String(target[1])}));
+}
+const venice1935=groupLocations(state.copies,1935).filter(g=>point(g.station).join(',')==='45.43713,12.33265');
+assert.equal(venice1935.length,1);assert.equal(venice1935[0].entries.size,73);
+const europe=copyStations('02020083').find(s=>s.place_authority_id==='6255148');
+assert.ok(europe);assert.equal(hasPoint(europe),false);
+assert.ok(!routeAtYear('02020083',2026).includes(europe));
+openDetail('02020083');assert.ok(els['detail-content'].innerHTML.includes('Nur Grossraum angegeben'));
+for(const id of ['3172456','2634341','3074982','5110302']) {
+ const s=[...state.stationsByCopy.values()].flat().find(s=>s.place_authority_id===id);
+ assert.ok(s);assert.deepEqual(point(s),[Number(s.latitude),Number(s.longitude)]);
+}
+assert.equal(JSON.stringify([...state.stationsByCopy]),sourceSnapshot);
 `,context);
 console.log('PASS: full data rendering with Leaflet/DOM stubs; all 484 detail views, six slider years, pre-print dates, historic endpoints, filters, country point, date conflict and viewport.');

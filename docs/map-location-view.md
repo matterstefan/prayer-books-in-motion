@@ -12,14 +12,13 @@ unverortbarer Nachweis unterbricht die Fortschreibung. Heutige Aufbewahrungsorte
 werden nur für die Gegenwart verwendet; historische/Handelsexemplare behalten
 ihren ausdrücklich als Annäherung markierten letzten bekannten Ort.
 
-Gruppiert wird nach Koordinaten (fünf Dezimalstellen). Als Länderpunkte markierte
-Stationen bleiben von lokalen Punkten getrennt. Dies ist eine Bündelung von
+Gruppiert wird nach Koordinaten (fünf Dezimalstellen). Länder- und Regionspunkte bleiben von lokalen Punkten getrennt. Dies ist eine Bündelung von
 Kartenpunkten, keine neue Normierung von Ortsnamen oder Institutionen.
 
 Die Kreisfläche ist proportional zur Zahl unterschiedlicher Exemplare
 (Radius = 6 × Quadratwurzel der Anzahl). Alle Kreise sind einheitlich weinrot;
 eine qualitative Einstufung anhand offener oder geschlossener Datierungen entfällt.
-Gestrichelter Rand: Länderpunkt.
+Gestrichelter Rand: Länder- oder Regionspunkt.
 Quellenzeiträume können selbst ungefähr sein; keine Einstufung beweist einen
 ununterbrochenen Aufenthalt. Die Zahlen beschreiben die ausgewählten
 Katalognachweise, keine historische Gesamtverteilung.
@@ -34,3 +33,6 @@ Prüfung erhalten. Das bisherige Verhalten der Linienbündel wurde nicht geände
 Prüfung: `node tests/map-data.cjs` (DOM-/Leaflet-Stubs), inklusive Aggregation,
 gemischter Einstufung, Länderpunkttrennung, leerer Auswahl und Ansichtswechsel.
 Die Tests ersetzen keine visuelle Kontrolle im Browser.
+
+Die beschlossenen Ortszuordnungen und Ausnahmen sind in `data-review-log.md` dokumentiert.
+Länder/Regionen sind nur in dieser Kreisansicht kartiert, nicht als Linienhaltepunkte.

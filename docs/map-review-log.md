@@ -22,3 +22,5 @@ unabhängig geprüft. Quelldatierungen werden nicht um erfundene Endjahre ergän
 
 Die Ortsansicht bleibt vorläufig bestehen. Änderungen an Darstellung und
 Zeitlogik werden separat umgesetzt und getestet; diese Liste ändert keinen Code.
+
+Am 3. Oktober 2026 wurde die Rasterbündelung nach Nutzerrückmeldung durch gewichtete Ortsgruppen ersetzt. Beschreibung: `map-bundle-prototype.md`. 3D-Bögen bleiben eine spätere Idee.

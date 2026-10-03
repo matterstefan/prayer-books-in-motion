@@ -1,12 +1,13 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const element=()=>({value:'',textContent:'',innerHTML:'',hidden:false,classList:{add(){},remove(){}},setAttribute(){},focus(){},insertAdjacentHTML(){},addEventListener(){}});
 const elements=new Map();const doc={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},addEventListener(){}};
-const map={setView(){return this},closePopup(){},fitBounds(){this.fits=(this.fits||0)+1}};
+const map={getZoom(){return this.zoom||4},setView(){return this},closePopup(){},fitBounds(){this.fits=(this.fits||0)+1}};
 const layer=()=>({addTo(){return this},clearLayers(){},bindPopup(){},bindTooltip(){},on(){},setStyle(style){this.style={...this.style,...style}},bringToFront(){}});
 const context=vm.createContext({console,document:doc,L:{map:()=>map,tileLayer:layer,layerGroup:layer,polyline:layer,circleMarker:layer}});
 vm.runInContext(fs.readFileSync('assets/app.js','utf8').replace(/loadData\(\);\s*$/,''),context);
 context.copiesText=fs.readFileSync('data/expanded/tables/mei-copies.csv','utf8');context.stationsText=fs.readFileSync('data/expanded/tables/mei-itinerary-stations-resolved.csv','utf8');context.assert=assert;
 vm.runInContext(`
+state.bundleStrength=0;state.lineScale=1;
 state.copies=parseCsv(copiesText).filter(directCopy);
 for(const s of parseCsv(stationsText).map(reviewedStation)){if(!state.stationsByCopy.has(s.copy_id))state.stationsByCopy.set(s.copy_id,[]);state.stationsByCopy.get(s.copy_id).push(s)}
 for(const a of state.stationsByCopy.values())a.sort((a,b)=>Number(a.source_order)-Number(b.source_order)||Number(a.place_order_within_source)-Number(b.place_order_within_source));
@@ -135,5 +136,23 @@ for(const id of ['3172456','2634341','3074982','5110302']) {
  assert.ok(s);assert.deepEqual(point(s),[Number(s.latitude),Number(s.longitude)]);
 }
 assert.equal(JSON.stringify([...state.stationsByCopy]),sourceSnapshot);
+state.copies.forEach(c=>state.selected.add(c.copy_id));state.year=2026;state.view='connections';
+state.bundleStrength=32;state.lineScale=1.5;map.zoom=3;
+const zoomedOut=bundleRoutes(state.copies,2026);map.zoom=8;
+const zoomedIn=bundleRoutes(state.copies,2026);
+assert.ok(zoomedIn.length>zoomedOut.length);
+for(const g of zoomedOut){assert.equal(g.entries.size,new Set([...g.entries.keys()]).size);assert.ok(g.coordinates.flat().every(Number.isFinite));}
+render();
+const selectedGroup=bundleRoutes(displayedCopies(),2026).find(g=>g.entries.size>1);
+selectSegment(selectedGroup);
+assert.equal(els['bundle-panel'].hidden,false);
+assert.equal(state.layers.filter(l=>l.layer.style.opacity===1).length,1);
+assert.equal(state.layers.find(l=>l.layer.style.opacity===1).segmentKey,selectedGroup.key);
+state.hoveredSegment='another';updateRouteFocus();
+assert.equal(state.layers.filter(l=>l.layer.style.opacity===1).length,1);
+openDetail([...selectedGroup.entries.keys()][0]);
+assert.equal(els['bundle-panel'].hidden,true);assert.equal(state.focusedSegment,null);
+assert.equal(map.fits,undefined);
+
 `,context);
 console.log('PASS: full data rendering with Leaflet/DOM stubs; all 484 detail views, six slider years, pre-print dates, historic endpoints, filters, country point, date conflict and viewport.');

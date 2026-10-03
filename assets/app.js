@@ -66,14 +66,59 @@ function escapeHtml(value) {
 }
 
 function directCopy(copy) { return copy.relationship_types.split(" | ").includes("direct"); }
-function hasPoint(station) { return station.latitude !== "" && station.longitude !== "" && Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude)) && Math.abs(Number(station.latitude)) <= 90 && Math.abs(Number(station.longitude)) <= 180; }
-function point(station) { return [Number(station.latitude), Number(station.longitude)]; }
+// Approved display-only alignments, 2026-10-03. Source coordinates stay intact.
+const displayPointAliases = new Map([
+  ["45.43890,12.33092", [45.43713,12.33265]], // Venice
+  ["49.45410,11.07680", [49.45421,11.07752]], // Nuremberg
+  ["45.46416,9.19199", [45.46427,9.18951]], // Milan
+  ["51.22047,4.40026", [51.21989,4.40346]], // Antwerp
+  ["52.06866,4.28635", [52.07667,4.29861]], // The Hague
+  ["52.37302,4.89856", [52.37403,4.88969]], // Amsterdam
+  ["35.89833,14.51250", [35.89968,14.5148]], // Valletta
+  ["41.90268,12.45414", [41.90225,12.4533]], // Vatican City
+  ["41.31121,-72.92649", [41.30815,-72.92816]], // Yale / New Haven
+  ["52.80900,1.23100", [52.8118,1.2318]], // Blickling Estate / Hall
+  ["45.05000,7.66667", [45.07049,7.68682]], // Turin municipality / city
+]);
+const countryPlaceIds = new Set(["3017382", "2921044", "3175395", "798544", "2658434", "6252001", "6269131"]);
+const regionPlaceIds = new Set(["2951839", "2655856", "3174618", "6254927", "3164604"]);
+function spatialPrecision(station) {
+  const id = (station.place_authority_id || "").trim();
+  if (station.place_authority === "GeoNames") {
+    if (countryPlaceIds.has(id)) return "country";
+    if (regionPlaceIds.has(id)) return "region";
+  }
+  return station.spatial_precision || "locality";
+}
+function isArea(station) { return ["country", "region"].includes(spatialPrecision(station)); }
+function spatialNote(station) {
+  if (excludedDisplayPoint(station)) return "Nur Grossraum angegeben; kein lokaler Kartenpunkt";
+  return isArea(station) ? `Nur ${spatialPrecision(station) === "country" ? "Land" : "Region"} bekannt; repräsentativer Punkt, kein genauer Aufenthaltsort` : "";
+}
+function reviewedStation(station) {
+  // Narrow correction: do not silently apply it to a changed future source record.
+  if (station.station_id !== "02128182-p003-loc01" || station.place_authority_id !== "3570675" || station.time_start !== "1700" || station.time_end !== "1800") return station;
+  return {...station, source_location_label: station.location_label,
+    source_latitude: station.latitude, source_longitude: station.longitude,
+    location_label: "Frankreich, genauer Ort unbekannt", preferred_placename: "Frankreich", place_name: "Frankreich",
+    latitude: "46", longitude: "2", country: "France", spatial_precision: "country",
+    display_uncertainty: "Nur Frankreich belegt; genauer Ort unbekannt",
+    location_resolution_note: "Darstellungsentscheidung vom 3. Oktober 2026: Gebietscode e-fr und Prüfung durch Stefan Matter stützen Frankreich. Widersprüchlicher Ortsverweis Fort-de-France (GeoNames 3570675) wird nicht kartiert. Originaldaten bleiben erhalten."};
+}
+function excludedDisplayPoint(station) {
+  return station.place_authority === "GeoNames" && ["6255148", "9408659"].includes(station.place_authority_id);
+}
+function hasPoint(station) { return !excludedDisplayPoint(station) && station.latitude !== "" && station.longitude !== "" && Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude)) && Math.abs(Number(station.latitude)) <= 90 && Math.abs(Number(station.longitude)) <= 180; }
+function point(station) {
+  const raw = [Number(station.latitude), Number(station.longitude)];
+  return displayPointAliases.get(raw.map(n => n.toFixed(5)).join(",")) || raw;
+}
 function numeric(value) { return value == null || value === "" || !Number.isFinite(Number(value)) ? null : Number(value); }
 function copyStations(copyId) { return state.stationsByCopy.get(copyId) || []; }
 function printStation(copyId) { return copyStations(copyId).find(s => s.station_type === "print_place"); }
 function samePoint(first, second) {
-  return Boolean(first && second && first.latitude && second.latitude &&
-    first.latitude === second.latitude && first.longitude === second.longitude);
+  return Boolean(first && second && hasPoint(first) && hasPoint(second) &&
+    point(first).every((n, i) => n === point(second)[i]));
 }
 
 function compactStationsForDisplay(copyId) {
@@ -128,9 +173,9 @@ function routeAtYear(copyId, year) {
   const stations = copyStations(copyId);
   const birth = stationAnchor(printStation(copyId) || {});
   if (birth !== null && year < birth) return [];
-  if (year === CURRENT_YEAR) return stations.filter(hasPoint);
+  if (year === CURRENT_YEAR) return stations.filter(s => hasPoint(s) && !isArea(s));
   return stations.filter(station => station.station_type !== "current_holding" &&
-    !station.date_warning && stationAnchor(station) !== null && stationAnchor(station) <= year && hasPoint(station));
+    !station.date_warning && stationAnchor(station) !== null && stationAnchor(station) <= year && hasPoint(station) && !isArea(station));
 }
 
 function holdingLabel(copy) {
@@ -143,6 +188,8 @@ function segmentEvidence(from, to, all) {
   if ([from, to].some(s => s.display_uncertainty || s.spatial_precision === "country")) reasons.push("Ortszuweisung unsicher oder nur näherungsweise");
   if ([from, to].some(s => s.date_warning)) reasons.push("Widersprüchliche Datierung");
   const middle = all.slice(all.indexOf(from) + 1, all.indexOf(to));
+  const areas = middle.filter(s => isArea(s) || excludedDisplayPoint(s));
+  if (areas.length) reasons.push("Dazwischen: " + [...new Set(areas.map(s => s.location_label))].join("; ") + " (kein genauer Ort)");
   if (middle.length || Number(to.source_order) - Number(from.source_order) > 1) reasons.push("Dazwischenliegende Nachweise nicht dargestellt");
   const end = numeric(from.time_end), start = numeric(to.time_start);
   if (end === null || start === null) reasons.push("Übergang nicht ausreichend datiert");
@@ -274,7 +321,7 @@ function groupLocations(copies, year) {
     const location = locationAtYear(copy.copy_id, year);
     if (!location) continue;
     const station = location.station;
-    const key = point(station).map(n => n.toFixed(5)).join(",") + "|" + (station.spatial_precision === "country" ? "country" : "locality");
+    const key = point(station).map(n => n.toFixed(5)).join(",") + "|" + spatialPrecision(station);
     if (!groups.has(key)) groups.set(key, { station, entries: new Map() });
     groups.get(key).entries.set(copy.copy_id, { copy, ...location });
   }
@@ -288,7 +335,7 @@ function locationPopup(group) {
     <p>${entries.length} Exemplare am letzten zuweisbaren Ort bis ${state.year}.</p>
     <p class="method-note">Gemeinsamer Kartenpunkt, kein Beleg für gleichzeitigen Besitz oder ununterbrochenen Aufenthalt.</p>
     <div class="bundle-list" tabindex="0" aria-label="Drucke an diesem Kartenpunkt">${entries.map(({copy, station}) => `<div class="bundle-copy">${popupHtml(copy)}
-      <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
+      <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${spatialNote(station) ? " · " + escapeHtml(spatialNote(station)) : ""}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
 
 function renderLocations(copies, fit) {
@@ -302,12 +349,12 @@ function renderLocations(copies, fit) {
     const marker = L.circleMarker(point(group.station), {
       radius: 6 * Math.sqrt(entries.length), color: "#75132f", weight: 2,
       fillColor: "#75132f", fillOpacity: 1,
-      dashArray: group.station.spatial_precision === "country" ? "3 3" : null,
+      dashArray: isArea(group.station) ? "3 3" : null,
       bubblingMouseEvents: false
     }).addTo(locationLayer);
     state.layers.push({layer: marker, copyIds: ids, marker: true});
     marker.bindPopup(locationPopup(group), {autoPan: false, maxWidth: 380});
-    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} Exemplare`);
+    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} Exemplare${isArea(group.station) ? " · " + spatialNote(group.station) : ""}`);
     marker.on("click", () => { state.focusedCopy = null; state.focusedBundle = ids; state.hoveredBundle = null; updateRouteFocus(); });
     marker.on("mouseover", () => { state.hoveredBundle = ids; updateRouteFocus(); });
     marker.on("mouseout", () => { state.hoveredBundle = null; updateRouteFocus(); });
@@ -346,7 +393,7 @@ function renderMap({ fit = false } = {}) {
     const coordinates = route.map(point);
     coordinates.forEach(value => bounds.push(value));
     const location = locationAtYear(copy.copy_id, state.year);
-    if (location) {
+    if (location && !isArea(location.station)) {
       located += 1;
       const marker = L.circleMarker(point(location.station), {
         radius: location.station.spatial_precision === "country" ? 11 : 6,
@@ -443,7 +490,7 @@ function openDetail(copyId) {
     <h3>Überlieferte Stationen</h3>
     <p class="method-note">Die Liste zeigt die Gesamtfolge. Zeitliche Lücken, undatierte Stationen und fehlende Ortsangaben erlauben keinen lückenlosen Aufenthaltsnachweis.</p>
     <ol class="station-list">${stations.map(station => {
-      const unresolved = station.date_warning || station.display_uncertainty || unresolvedLabels[station.location_resolution_status];
+      const unresolved = spatialNote(station) || station.date_warning || station.display_uncertainty || unresolvedLabels[station.location_resolution_status];
       return `<li class="station-item"><span class="station-type">${escapeHtml(stationLabels[station.station_type] || station.station_type)}</span>
         <span class="station-place">${escapeHtml(station.location_label || station.place_name || "Ort nicht angegeben")}</span>
         <span class="station-time">${escapeHtml(stationTime(station))}</span>
@@ -517,7 +564,7 @@ async function loadData() {
     if (!copyResponse.ok || !stationResponse.ok) throw new Error("Datendateien konnten nicht geladen werden.");
     const [copies, stations] = await Promise.all([copyResponse.text().then(parseCsv), stationResponse.text().then(parseCsv)]);
     state.copies = copies.filter(directCopy).sort((a, b) => (a.title || "").localeCompare(b.title || "", "de"));
-    for (const station of stations) {
+    for (const station of stations.map(reviewedStation)) {
       if (!state.stationsByCopy.has(station.copy_id)) state.stationsByCopy.set(station.copy_id, []);
       state.stationsByCopy.get(station.copy_id).push(station);
     }

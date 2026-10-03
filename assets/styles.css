@@ -178,3 +178,15 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .view-switch button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 .legend-items { display: flex; flex-wrap: wrap; gap: .4rem .85rem; }
 .legend-items[hidden] { display: none; }
+
+.bundle-controls { flex-shrink: 0; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
+.bundle-controls summary { cursor: pointer; font-weight: 650; }
+.bundle-controls label { display: block; margin-top: .5rem; font-size: .85rem; }
+.bundle-controls input { width: 100%; }
+.bundle-controls p { font-size: .78rem; color: var(--muted); }
+.bundle-panel { position: fixed; z-index: 1000; top: 88px; right: 12px; width: min(350px, calc(100vw - 32px)); max-height: calc(100dvh - 110px); overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: .5rem; padding: 1rem; box-shadow: var(--shadow); }
+.bundle-panel[hidden], .bundle-controls[hidden] { display: none; }
+.bundle-panel .detail-toolbar { position: sticky; top: -1rem; background: #fff; padding: .5rem 0; z-index: 1; }
+.bundle-panel .bundle-list { max-height: none; overflow: visible; }
+.bundle-panel .method-note { display: block; }
+@media (max-width: 820px) { .bundle-panel { top: auto; bottom: 12px; max-height: 48dvh; } }

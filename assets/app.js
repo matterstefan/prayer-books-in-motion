@@ -12,6 +12,10 @@ const unresolvedLabels = { ambiguous: "mehrdeutig", country_only: "nur Land beka
 
 const state = {
   view: "connections",
+  bundleStrength: 32,
+  lineScale: 1.5,
+  focusedSegment: null,
+  hoveredSegment: null,
   year: CURRENT_YEAR,
   copies: [],
   stationsByCopy: new Map(),
@@ -30,7 +34,7 @@ const els = Object.fromEntries([
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
   "detail-panel", "detail-content", "detail-close", "about-panel", "about-button",
-  "about-close", "map-message", "clear-focus", "view-connections", "view-locations", "connection-legend", "location-legend"
+  "about-close", "map-message", "clear-focus", "view-connections", "view-locations", "connection-legend", "location-legend", "bundle-panel", "bundle-content", "bundle-close", "bundle-strength", "line-scale", "bundle-value", "line-value", "bundle-controls"
 ].map(id => [id, document.getElementById(id)]));
 
 const map = L.map("map", { zoomControl: true, minZoom: 2, worldCopyJump: true }).setView([48.8, 8.5], 4);
@@ -200,11 +204,12 @@ function segmentEvidence(from, to, all) {
 }
 
 function updateRouteFocus() {
-  const highlighted = state.focusedCopy ? new Set([state.focusedCopy]) : state.focusedBundle || (state.hoveredCopy ? new Set([state.hoveredCopy]) : state.hoveredBundle);
+  const segment = state.focusedSegment || state.hoveredSegment;
+  const highlighted = segment ? null : state.focusedCopy ? new Set([state.focusedCopy]) : state.focusedBundle || (state.hoveredCopy ? new Set([state.hoveredCopy]) : state.hoveredBundle);
   highlightLayer.clearLayers();
   for (const item of state.layers) {
-    const active = highlighted && [...(item.copyIds || [item.copyId])].some(id => highlighted.has(id));
-    const muted = highlighted && !active;
+    const active = segment ? item.segmentKey === segment : highlighted && [...(item.copyIds || [item.copyId])].some(id => highlighted.has(id));
+    const muted = (segment || highlighted) && !active;
     item.layer.setStyle({ weight: active ? (item.marker ? 3 : Math.max(6, item.baseWeight || 3)) : (item.marker ? 2 : item.baseWeight || 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
     if (active) item.layer.bringToFront();
   }
@@ -216,10 +221,12 @@ function updateRouteFocus() {
       L.polyline([point(route[i-1]), point(route[i])], {color:colorFor(id),weight:5,opacity:.95,dashArray:evidence.dashed?"6 5":null,interactive:false}).addTo(highlightLayer);
     }
   }
-  els["clear-focus"].hidden = !state.focusedCopy && !state.focusedBundle;
+  els["clear-focus"].hidden = !state.focusedCopy && !state.focusedBundle && !state.focusedSegment;
 }
 
 function focusCopy(copyId) {
+  state.focusedSegment = null; state.hoveredSegment = null;
+  els["bundle-panel"].hidden = true;
   state.focusedCopy = copyId;
   state.hoveredCopy = null;
   state.focusedBundle = null;
@@ -235,7 +242,12 @@ function hoverCopy(copyId) {
 
 function bundleRoutes(copies, year) {
   const groups = new Map();
-  const keyFor = s => point(s).map(n => n.toFixed(5)).join(",");
+  const keyFor = s => {
+    if (!state.bundleStrength) return point(s).map(n => n.toFixed(5)).join(",");
+    const [lat, lon] = point(s), sine = Math.sin(Math.max(-85, Math.min(85, lat)) * Math.PI / 180);
+    const size = 256 * 2 ** map.getZoom();
+    return Math.floor((lon + 180) / 360 * size / state.bundleStrength) + "," + Math.floor((.5 - Math.log((1+sine)/(1-sine))/(4*Math.PI))*size/state.bundleStrength);
+  };
   for (const copy of copies) {
     const route = routeAtYear(copy.copy_id, year);
     for (let i=1;i<route.length;i++) {
@@ -249,15 +261,39 @@ function bundleRoutes(copies, year) {
       group.entries.get(id).legs.push({from,to,evidence:segmentEvidence(from,to,copyStations(id))});
     }
   }
+  for (const g of groups.values()) {
+    const endpoints = [new Map(), new Map()];
+    const firstKey = keyFor(g.from);
+    for (const e of g.entries.values()) for (const leg of e.legs) {
+      const pair = keyFor(leg.from) === firstKey ? [leg.from,leg.to] : [leg.to,leg.from];
+      pair.forEach((st,i)=>endpoints[i].set(point(st).join(","),st));
+    }
+    g.coordinates = endpoints.map(points => {
+      const values=[...points.values()].map(point);
+      return [0,1].map(i=>values.reduce((sum,p)=>sum+p[i],0)/values.length);
+    });
+    g.endpointNames = endpoints.map(points=>[...new Set([...points.values()].map(st=>st.preferred_placename||st.place_name||st.location_label))]);
+  }
   return [...groups.values()];
+}
+function bundleTitle(group) {
+  return group.endpointNames.map(names=>names.length===1?names[0]:names.slice(0,2).join(" / ")+(names.length>2?` + ${names.length-2} Orte`:"")).join(" ↔ ");
+}
+function selectSegment(group) {
+  state.focusedCopy=null; state.focusedBundle=null; state.hoveredCopy=null; state.hoveredBundle=null;
+  state.focusedSegment=group.key; state.hoveredSegment=null;
+  closePanel(els["detail-panel"]); closePanel(els["about-panel"]);
+  els["bundle-content"].innerHTML=bundlePopup(group);
+  els["bundle-panel"].hidden=false;
+  updateRouteFocus();
 }
 
 function bundlePopup(group) {
   const entries=[...group.entries.values()];
   const name=s=>s.preferred_placename || s.place_name || s.location_label;
-  return `<h3>${escapeHtml(name(group.from))} ↔ ${escapeHtml(name(group.to))}</h3>
+  return `<h3>${escapeHtml(bundleTitle(group))}</h3>
     <p>${entries.length} ${entries.length===1?"Exemplar":"Exemplare"} in dieser Auswahl</p>
-    <p class="method-note">Gemeinsame Ortsverbindung, keine gemeinsam belegte Reise. Richtung und Einstufung stehen beim jeweiligen Druck.</p>
+    <p class="method-note">Je nach Zoom sind nahe Orte zusammengefasst; die Linie verläuft dann zwischen repräsentativen Punkten. Keine gemeinsam belegte Reise. Die tatsächlichen Stationen stehen bei jedem Druck.</p>
     <div class="bundle-list" tabindex="0" aria-label="Beteiligte Drucke">${entries.map(({copy,legs})=>`<div class="bundle-copy">
       ${popupHtml(copy)}
       <p class="popup-meta">${[...new Set(legs.map(l=>`${name(l.from)} → ${name(l.to)}: ${l.evidence.description}`))].map(escapeHtml).join("<br>")}</p>
@@ -306,6 +342,8 @@ function popupHtml(copy) {
 }
 
 function clearMapLayers() {
+  state.focusedSegment = null; state.hoveredSegment = null;
+  els["bundle-panel"].hidden = true;
   state.hoveredCopy = null;
   state.hoveredBundle = null;
   state.focusedBundle = null;
@@ -369,6 +407,7 @@ function renderLocations(copies, fit) {
 
 function setMapView(view) {
   state.view = view;
+  els["bundle-controls"].hidden = view !== "connections";
   map.closePopup();
   els["view-connections"].setAttribute("aria-pressed", String(view === "connections"));
   els["view-locations"].setAttribute("aria-pressed", String(view === "locations"));
@@ -419,18 +458,17 @@ function renderMap({ fit = false } = {}) {
     const ids=new Set(group.entries.keys()),single=ids.size===1;
     const legs=[...group.entries.values()].flatMap(e=>e.legs);
     const dashed=legs.some(l=>l.evidence.dashed);
-    const weight=2+Math.log2(ids.size+1)*1.5;
-    const line=L.polyline([point(group.from),point(group.to)],{color:single?colorFor([...ids][0]):"#596674",weight,opacity:.55,dashArray:dashed?"6 5":null,bubblingMouseEvents:false}).addTo(routeLayer);
-    state.layers.push({layer:line,copyIds:ids,copyId:single?[...ids][0]:null,baseWeight:weight,marker:false});
-    line.bindPopup(bundlePopup(group),{autoPan:false,maxWidth:380});
-    line.bindTooltip(`${ids.size} ${single?"Exemplar":"Exemplare"} · ${group.from.preferred_placename || group.from.location_label} ↔ ${group.to.preferred_placename || group.to.location_label}`);
-    line.on("click",()=>{state.focusedCopy=single?[...ids][0]:null;state.focusedBundle=single?null:ids;state.hoveredCopy=null;state.hoveredBundle=null;updateRouteFocus()});
-    line.on("mouseover",()=>{state.hoveredCopy=null;state.hoveredBundle=ids;updateRouteFocus()});
-    line.on("mouseout",()=>{state.hoveredBundle=null;updateRouteFocus()});
+    const weight=state.lineScale * (2 + 2 * Math.sqrt(ids.size));
+    const line=L.polyline(group.coordinates,{color:single?colorFor([...ids][0]):"#596674",weight,opacity:.55,dashArray:dashed?"6 5":null,bubblingMouseEvents:false}).addTo(routeLayer);
+    state.layers.push({layer:line,segmentKey:group.key,copyIds:ids,copyId:single?[...ids][0]:null,baseWeight:weight,marker:false});
+    line.bindTooltip(`${ids.size} ${single?"Exemplar":"Exemplare"} · ${escapeHtml(bundleTitle(group))}`);
+    line.on("click",()=>selectSegment(group));
+    line.on("mouseover",()=>{state.hoveredSegment=group.key;updateRouteFocus()});
+    line.on("mouseout",()=>{state.hoveredSegment=null;updateRouteFocus()});
   }
   updateRouteFocus();
 
-  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} mit Kartenpunkt für ${state.year} · ${mappedStations} dargestellte Wegpunkte`;
+  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} mit Kartenpunkt für ${state.year} · ${bundles.length} Linienbündel · nahe Verbindungen können beim Herauszoomen entfallen`;
   els["map-message"].hidden = copies.length > 0;
   els["map-message"].textContent = copies.length ? "" : "Für diese Auswahl sind keine Drucke markiert.";
   if (fit && bounds.length) map.fitBounds(bounds, { padding: [34, 34], maxZoom: 6 });
@@ -520,6 +558,13 @@ function populateFilters() {
 }
 
 function bindEvents() {
+  map.on("zoomend",()=>{if(state.view==="connections")render({list:false})});
+  for (const [id,key,out] of [["bundle-strength","bundleStrength","bundle-value"],["line-scale","lineScale","line-value"]]) {
+    els[id].addEventListener("input",event=>{state[key]=Number(event.target.value);els[out].textContent=String(state[key]);render({list:false})});
+  }
+  els["bundle-close"].addEventListener("click",()=>focusCopy(null));
+  els["bundle-content"].addEventListener("click",event=>{const button=event.target.closest("[data-track-id]");if(button)openDetail(button.dataset.trackId)});
+
   els["view-connections"].addEventListener("click", () => setMapView("connections"));
   els["view-locations"].addEventListener("click", () => setMapView("locations"));
   map.on("click", () => { focusCopy(null); closePanel(els["detail-panel"]); });
@@ -552,10 +597,10 @@ function bindEvents() {
   });
   els["detail-close"].addEventListener("click", () => closePanel(els["detail-panel"]));
   els["about-button"].addEventListener("click", () => {
-    closePanel(els["detail-panel"]); els["about-panel"].classList.add("is-open"); els["about-panel"].setAttribute("aria-hidden", "false"); els["about-close"].focus();
+    els["bundle-panel"].hidden=true; closePanel(els["detail-panel"]); els["about-panel"].classList.add("is-open"); els["about-panel"].setAttribute("aria-hidden", "false"); els["about-close"].focus();
   });
   els["about-close"].addEventListener("click", () => closePanel(els["about-panel"]));
-  document.addEventListener("keydown", event => { if (event.key === "Escape") { closePanel(els["detail-panel"]); closePanel(els["about-panel"]); } });
+  document.addEventListener("keydown", event => { if (event.key === "Escape") { focusCopy(null); closePanel(els["detail-panel"]); closePanel(els["about-panel"]); } });
 }
 
 async function loadData() {

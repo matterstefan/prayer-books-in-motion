@@ -7,7 +7,7 @@
     <title>Prayer Books in Motion – Drucke in Bewegung</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261003-4">
+    <link rel="stylesheet" href="assets/styles.css?v=20261003-5">
   </head>
   <body>
     <header class="topbar">
@@ -39,11 +39,11 @@
 
         <details id="bundle-controls" class="bundle-controls">
           <summary>Linien einstellen · Prototyp</summary>
-          <label for="bundle-strength">Bündelungsstärke: <output id="bundle-value">32</output> px</label>
-          <input id="bundle-strength" type="range" min="0" max="240" step="4" value="32">
+          <label for="bundle-strength">Bündelungsstärke: <output id="bundle-value">32</output> CSS-Pixel</label>
+          <input id="bundle-strength" type="range" min="0" max="2400" step="4" value="32">
           <label for="line-scale">Linienbreite: <output id="line-value">1.5</output> ×</label>
           <input id="line-scale" type="range" min="0.5" max="4" step="0.1" value="1.5">
-          <p>0 px: einzelne Orte. Höhere Werte gruppieren nahe Orte um häufig belegte Zentren. Der Wert begrenzt die Reichweite auf dem Bildschirm; Hineinzoomen löst Gruppen auf. Verbindungen innerhalb einer Gruppe sind ausgeblendet.</p>
+          <p>0: einzelne Orte. Bis 2400 sind extreme Zusammenfassungen zum Experimentieren möglich. CSS-Pixel beziehen sich auf die Kartenansicht, nicht auf die physischen Pixel des Bildschirms. Hineinzoomen verkleinert die geografische Reichweite. Innerhalb einer Ortsgruppe liegende Verbindungen verschwinden; bei extremer Bündelung können auch alle Linien entfallen.</p>
         </details>
         <section class="filter-panel" aria-labelledby="filter-title">
           <h2 id="filter-title" class="visually-hidden">Drucke auswählen und filtern</h2>
@@ -115,6 +115,6 @@
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261003-4" defer></script>
+    <script src="assets/app.js?v=20261003-5" defer></script>
   </body>
 </html>

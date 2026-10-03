@@ -6,7 +6,7 @@ werden nicht verändert. Gruppierung dient nur der lesbaren Übersicht.
 ## Bedienung
 
 «Linien einstellen · Prototyp» enthält:
-- Bündelungsstärke 0–240 Bildschirmpixel, Start 32. 0 = exakte Ortsverbindungen.
+- Bündelungsstärke 0–2400 Bildschirmpixel, Start 32. 0 = exakte Ortsverbindungen.
   Grössere Werte erlauben gröbere Gruppierungen; Zoom verändert die geografische
   Reichweite. Die Reglerwerte gelten für die Sitzung.
 - Linienbreite 0.5–4: Faktor × (2 + 2 × sqrt(Anzahl unterschiedlicher Exemplare)).
@@ -45,3 +45,9 @@ Prüfung: node tests/map-data.cjs mit vollständigen Daten und Leaflet/DOM-Stubs
 unter anderem keine Gruppierung bei 0, gewichtete Zentren, Reihenfolgeunabhängigkeit,
 feinere Auflösung beim Zoom, Segmentauswahl und unveränderte Quelldaten.
 Visuelle Browserkontrolle ausstehend.
+
+Erweiterung vom 3. Oktober, abends: Regler bis 2400 CSS-Pixel für extreme Tests.
+CSS-Pixel sind logische Anzeigeeinheiten, keine physischen Gerätepixel.
+Bei maximaler Zusammenfassung können sämtliche Linien verschwinden, weil
+beide Enden in derselben Ortsgruppe liegen. «Ortsgruppe» und «Exemplare auf
+dieser Verbindung» werden im Kontextfenster ausdrücklich unterschieden.

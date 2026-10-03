@@ -138,6 +138,15 @@ for(const id of ['3172456','2634341','3074982','5110302']) {
 assert.equal(JSON.stringify([...state.stationsByCopy]),sourceSnapshot);
 state.copies.forEach(c=>state.selected.add(c.copy_id));state.year=2026;state.view='connections';
 state.bundleStrength=32;state.lineScale=1.5;map.zoom=3;
+const exactClusters=weightedPlaceGroups(state.copies,2026,3,0);
+assert.ok([...exactClusters.assignments].every(([key,center])=>key===center.key));
+const weighted=weightedPlaceGroups(state.copies,2026,3,160);
+assert.ok([...weighted.assignments.values()].some(c=>c.members.length>1));
+const reversed=weightedPlaceGroups([...state.copies].reverse(),2026,3,160);
+for(const [key,center] of weighted.assignments){
+ assert.equal(reversed.assignments.get(key).key,center.key);
+ for(const member of center.members)assert.ok(center.copies.size>=member.copies.size);
+}
 const zoomedOut=bundleRoutes(state.copies,2026);map.zoom=8;
 const zoomedIn=bundleRoutes(state.copies,2026);
 assert.ok(zoomedIn.length>zoomedOut.length);

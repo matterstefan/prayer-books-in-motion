@@ -240,14 +240,45 @@ function hoverCopy(copyId) {
   updateRouteFocus();
 }
 
+function weightedPlaceGroups(copies, year, zoom, strength) {
+  const places = new Map(), assignments = new Map();
+  const placeKey = station => point(station).map(n => n.toFixed(5)).join(",");
+  for (const copy of copies) for (const station of routeAtYear(copy.copy_id, year)) {
+    const key = placeKey(station);
+    if (!places.has(key)) places.set(key, {key, station, copies: new Set()});
+    places.get(key).copies.add(copy.copy_id);
+  }
+  const ordered = [...places.values()].sort((a,b)=>b.copies.size-a.copies.size || a.key.localeCompare(b.key));
+  const size=256*2**zoom, maximum=ordered[0]?.copies.size || 1;
+  const project=station=>{
+    const [lat,lon]=point(station), sine=Math.sin(Math.max(-85,Math.min(85,lat))*Math.PI/180);
+    return [(lon+180)/360*size,(.5-Math.log((1+sine)/(1-sine))/(4*Math.PI))*size];
+  };
+  const centers=[];
+  for (const place of ordered) {
+    const xy=project(place.station);
+    let best=null, bestScore=Infinity;
+    for (const center of centers) {
+      const dx=Math.abs(xy[0]-center.xy[0]);
+      const distance=Math.hypot(Math.min(dx,size-dx),xy[1]-center.xy[1]);
+      // Finite radius; strong neighbouring centers are harder to absorb.
+      const radius=strength*(.5+.5*Math.sqrt(center.copies.size/maximum))*(1-.5*place.copies.size/center.copies.size);
+      if (radius>0 && distance<=radius && distance/radius<bestScore) {
+        best=center; bestScore=distance/radius;
+      }
+    }
+    if (!best) { best={...place,xy,members:[]};centers.push(best); }
+    best.members.push(place);
+    assignments.set(place.key,best);
+  }
+  return {assignments,placeKey};
+}
+
 function bundleRoutes(copies, year) {
   const groups = new Map();
-  const keyFor = s => {
-    if (!state.bundleStrength) return point(s).map(n => n.toFixed(5)).join(",");
-    const [lat, lon] = point(s), sine = Math.sin(Math.max(-85, Math.min(85, lat)) * Math.PI / 180);
-    const size = 256 * 2 ** map.getZoom();
-    return Math.floor((lon + 180) / 360 * size / state.bundleStrength) + "," + Math.floor((.5 - Math.log((1+sine)/(1-sine))/(4*Math.PI))*size/state.bundleStrength);
-  };
+  const clustering=weightedPlaceGroups(copies,year,map.getZoom(),state.bundleStrength);
+  const centerFor=s=>clustering.assignments.get(clustering.placeKey(s));
+  const keyFor=s=>centerFor(s).key;
   for (const copy of copies) {
     const route = routeAtYear(copy.copy_id, year);
     for (let i=1;i<route.length;i++) {
@@ -268,16 +299,14 @@ function bundleRoutes(copies, year) {
       const pair = keyFor(leg.from) === firstKey ? [leg.from,leg.to] : [leg.to,leg.from];
       pair.forEach((st,i)=>endpoints[i].set(point(st).join(","),st));
     }
-    g.coordinates = endpoints.map(points => {
-      const values=[...points.values()].map(point);
-      return [0,1].map(i=>values.reduce((sum,p)=>sum+p[i],0)/values.length);
-    });
+    g.centers=[centerFor(g.from),centerFor(g.to)];
+    g.coordinates=g.centers.map(center=>point(center.station));
     g.endpointNames = endpoints.map(points=>[...new Set([...points.values()].map(st=>st.preferred_placename||st.place_name||st.location_label))]);
   }
   return [...groups.values()];
 }
 function bundleTitle(group) {
-  return group.endpointNames.map(names=>names.length===1?names[0]:names.slice(0,2).join(" / ")+(names.length>2?` + ${names.length-2} Orte`:"")).join(" ↔ ");
+  return group.centers.map(center=>`${center.members.length>1?"Gruppe um ":""}${center.station.preferred_placename || center.station.place_name || center.station.location_label}`).join(" ↔ ");
 }
 function selectSegment(group) {
   state.focusedCopy=null; state.focusedBundle=null; state.hoveredCopy=null; state.hoveredBundle=null;
@@ -293,7 +322,8 @@ function bundlePopup(group) {
   const name=s=>s.preferred_placename || s.place_name || s.location_label;
   return `<h3>${escapeHtml(bundleTitle(group))}</h3>
     <p>${entries.length} ${entries.length===1?"Exemplar":"Exemplare"} in dieser Auswahl</p>
-    <p class="method-note">Je nach Zoom sind nahe Orte zusammengefasst; die Linie verläuft dann zwischen repräsentativen Punkten. Keine gemeinsam belegte Reise. Die tatsächlichen Stationen stehen bei jedem Druck.</p>
+    <p class="popup-meta">Orte dieser Verbindung: ${group.endpointNames.map(names=>names.map(escapeHtml).join(", ")).join(" ↔ ")}</p>
+    <p class="method-note">Häufig belegte Orte bilden die Gruppenzentren; nahe Orte können ihnen zugeordnet sein. Keine historischen Einzugsgebiete und keine gemeinsam belegte Reise. Die tatsächlichen Stationen stehen bei jedem Druck.</p>
     <div class="bundle-list" tabindex="0" aria-label="Beteiligte Drucke">${entries.map(({copy,legs})=>`<div class="bundle-copy">
       ${popupHtml(copy)}
       <p class="popup-meta">${[...new Set(legs.map(l=>`${name(l.from)} → ${name(l.to)}: ${l.evidence.description}`))].map(escapeHtml).join("<br>")}</p>

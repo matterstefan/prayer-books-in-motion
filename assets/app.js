@@ -306,7 +306,7 @@ function bundleRoutes(copies, year) {
   return [...groups.values()];
 }
 function bundleTitle(group) {
-  return group.centers.map(center=>`${center.members.length>1?"Gruppe um ":""}${center.station.preferred_placename || center.station.place_name || center.station.location_label}`).join(" ↔ ");
+  return group.centers.map(center=>`${center.members.length>1?"Ortsgruppe um ":""}${center.station.preferred_placename || center.station.place_name || center.station.location_label}`).join(" ↔ ");
 }
 function selectSegment(group) {
   state.focusedCopy=null; state.focusedBundle=null; state.hoveredCopy=null; state.hoveredBundle=null;
@@ -321,7 +321,8 @@ function bundlePopup(group) {
   const entries=[...group.entries.values()];
   const name=s=>s.preferred_placename || s.place_name || s.location_label;
   return `<h3>${escapeHtml(bundleTitle(group))}</h3>
-    <p>${entries.length} ${entries.length===1?"Exemplar":"Exemplare"} in dieser Auswahl</p>
+    <p>${entries.length} ${entries.length===1?"Exemplar":"Exemplare"} auf dieser Verbindung</p>
+    <p class="popup-meta">«Ortsgruppe» bezeichnet zusammengefasste Orte, nicht mehrere Exemplare. Auch ein einzelnes Exemplar kann zwei Ortsgruppen verbinden.</p>
     <p class="popup-meta">Orte dieser Verbindung: ${group.endpointNames.map(names=>names.map(escapeHtml).join(", ")).join(" ↔ ")}</p>
     <p class="method-note">Häufig belegte Orte bilden die Gruppenzentren; nahe Orte können ihnen zugeordnet sein. Keine historischen Einzugsgebiete und keine gemeinsam belegte Reise. Die tatsächlichen Stationen stehen bei jedem Druck.</p>
     <div class="bundle-list" tabindex="0" aria-label="Beteiligte Drucke">${entries.map(({copy,legs})=>`<div class="bundle-copy">

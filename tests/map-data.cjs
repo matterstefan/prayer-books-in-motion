@@ -24,7 +24,7 @@ for(const year of [1450,1499,1600,1800,1950,2026]){state.year=year;render();}
 state.search='bologna';assert.ok(filteredCopies().length>0);state.search='';
 for(const c of state.copies)openDetail(c.copy_id);
 assert.equal(map.fits,undefined); // Opening details or moving time never resets the map.
-assert.ok(popupHtml(state.copies[0]).includes('Druck verfolgen'));
+assert.ok(popupHtml(state.copies[0]).includes('Trace this copy'));
 state.year=2026;render();
 const first=state.layers.find(x=>!x.marker&&x.copyId);focusCopy(first.copyId);
 assert.equal(first.layer.style.weight,6);
@@ -107,12 +107,12 @@ testCopies.forEach(c=>state.stationsByCopy.delete(c.copy_id));
 state.selected.clear();render();
 assert.equal(state.layers.length,0);assert.equal(els['map-message'].hidden,false);
 const corrected=copyStations('02128182').find(s=>s.station_id==='02128182-p003-loc01');
-assert.equal(corrected.location_label,'Frankreich, genauer Ort unbekannt');
+assert.equal(corrected.location_label,'France, precise location unknown');
 assert.equal(corrected.source_location_label,'Fort-de-France');
 assert.equal(locationAtYear('02128182',1750).station,corrected);
 assert.ok(!routeAtYear('02128182',2026).some(s=>isArea(s)||excludedDisplayPoint(s)));
 const correctedRoute=routeAtYear('02128182',2026);
-assert.ok(segmentEvidence(correctedRoute[0],correctedRoute[1],copyStations('02128182')).description.includes('Frankreich'));
+assert.ok(segmentEvidence(correctedRoute[0],correctedRoute[1],copyStations('02128182')).description.includes('France'));
 for(const stations of state.stationsByCopy.values())for(const station of stations) {
  if(countryPlaceIds.has(station.place_authority_id))assert.equal(spatialPrecision(station),'country');
  if(regionPlaceIds.has(station.place_authority_id))assert.equal(spatialPrecision(station),'region');
@@ -130,7 +130,7 @@ assert.equal(venice1935.length,1);assert.equal(venice1935[0].entries.size,73);
 const europe=copyStations('02020083').find(s=>s.place_authority_id==='6255148');
 assert.ok(europe);assert.equal(hasPoint(europe),false);
 assert.ok(!routeAtYear('02020083',2026).includes(europe));
-openDetail('02020083');assert.ok(els['detail-content'].innerHTML.includes('Nur Grossraum angegeben'));
+openDetail('02020083');assert.ok(els['detail-content'].innerHTML.includes('Broad area only'));
 for(const id of ['3172456','2634341','3074982','5110302']) {
  const s=[...state.stationsByCopy.values()].flat().find(s=>s.place_authority_id===id);
  assert.ok(s);assert.deepEqual(point(s),[Number(s.latitude),Number(s.longitude)]);

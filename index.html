@@ -1,120 +1,122 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Experimentelle Visualisierung offen zugänglicher Katalog- und Provenienzdaten zu gedruckten Gebetbüchern des 15. Jahrhunderts.">
-    <title>Prayer Books in Motion – Drucke in Bewegung</title>
+    <meta name="description" content="Experimental visualisation of publicly accessible catalogue and provenance data for fifteenth-century printed prayer books.">
+    <title>Prayer Books in Motion – Copies in motion</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261003-5">
+    <link rel="stylesheet" href="assets/styles.css?v=20261005-1">
   </head>
   <body>
     <header class="topbar">
       <div>
-        <p class="eyebrow">Experimentelle Datenvisualisierung</p>
+        <p class="eyebrow">Experimental data visualisation</p>
         <h1>Prayer Books in Motion</h1>
       </div>
-      <button id="about-button" class="quiet-button" type="button" aria-controls="about-panel">Über das Projekt</button>
+      <button id="about-button" class="quiet-button" type="button" aria-controls="about-panel">About the project</button>
     </header>
 
     <main class="workspace">
-      <aside class="controls" aria-label="Kartenauswahl">
+      <aside class="controls" aria-label="Map controls">
         <section class="time-panel">
-          <div class="view-switch" role="group" aria-label="Kartenansicht">
-            <button id="view-connections" type="button" aria-pressed="true">Verbindungen</button>
-            <button id="view-locations" type="button" aria-pressed="false">Aufenthaltsorte</button>
+          <div class="view-switch" role="group" aria-label="Map view">
+            <button id="view-connections" type="button" aria-pressed="true">Connections</button>
+            <button id="view-locations" type="button" aria-pressed="false">Locations</button>
           </div>
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Drucke in Bewegung</p>
-              <h2>Aufenthaltsorte im Jahr <output id="year-output" for="year-slider">2026</output></h2>
+              <p class="eyebrow">Copies in motion</p>
+              <h2>Locations in <output id="year-output" for="year-slider">2026</output></h2>
             </div>
-            <button id="reset-button" class="text-button" type="button">Zurücksetzen</button>
+            <button id="reset-button" class="text-button" type="button">Reset</button>
           </div>
-          <input id="year-slider" class="year-slider" type="range" min="1450" max="2026" value="2026" step="1" aria-label="Jahr auswählen">
+          <input id="year-slider" class="year-slider" type="range" min="1450" max="2026" value="2026" step="1" aria-label="Choose a year">
           <div class="year-scale" aria-hidden="true"><span>1450</span><span>1500</span><span>1600</span><span>1800</span><span>2026</span></div>
-          <p class="method-note">Zwischen punktuellen Nachweisen wird der letzte bekannte Ort fortgeschrieben. Die Anzeige belegt keinen ununterbrochenen Aufenthalt; Linien sind schematisch und können Lücken überbrücken.</p>
+          <p class="method-note">The last known location is carried forward between records. This does not establish continuous residence; lines are schematic and may bridge gaps.</p>
         </section>
 
         <details id="bundle-controls" class="bundle-controls">
-          <summary>Linien einstellen · Prototyp</summary>
-          <label for="bundle-strength">Bündelungsstärke: <output id="bundle-value">32</output> CSS-Pixel</label>
-          <input id="bundle-strength" type="range" min="0" max="2400" step="4" value="32">
-          <label for="line-scale">Linienbreite: <output id="line-value">1.5</output> ×</label>
+          <summary>Adjust lines · Prototype</summary>
+          <label for="bundle-strength">Clustering radius: <output id="bundle-value">32</output> CSS pixels</label>
+          <input id="bundle-strength" type="range" min="0" max="600" step="4" value="32">
+          <label for="line-scale">Line width: <output id="line-value">1.5</output> ×</label>
           <input id="line-scale" type="range" min="0.5" max="4" step="0.1" value="1.5">
-          <p>0: einzelne Orte. Bis 2400 sind extreme Zusammenfassungen zum Experimentieren möglich. CSS-Pixel beziehen sich auf die Kartenansicht, nicht auf die physischen Pixel des Bildschirms. Hineinzoomen verkleinert die geografische Reichweite. Innerhalb einer Ortsgruppe liegende Verbindungen verschwinden; bei extremer Bündelung können auch alle Linien entfallen.</p>
+          <p>0: individual places. Increase up to 600 to explore broader clusters. CSS pixels relate to the map view, not physical screen pixels. Zooming in reduces the geographical reach. Links within a cluster are hidden; at extreme settings all lines may disappear.</p>
         </details>
         <section class="filter-panel" aria-labelledby="filter-title">
-          <h2 id="filter-title" class="visually-hidden">Drucke auswählen und filtern</h2>
-          <label class="search-label" for="search-input">Drucke durchsuchen</label>
-          <input id="search-input" class="search-input" type="search" placeholder="Titel, Bibliothek, Signatur oder ID">
+          <h2 id="filter-title" class="visually-hidden">Select and filter copies</h2>
+          <label class="search-label" for="search-input">Search copies</label>
+          <input id="search-input" class="search-input" type="search" placeholder="Title, library, shelfmark or ID">
           <div class="filter-grid">
-            <label> Druckort
-              <select id="place-filter"><option value="">Alle Druckorte</option></select>
+            <label> Printing place
+              <select id="place-filter"><option value="">All printing places</option></select>
             </label>
-            <label> Sprache
-              <select id="language-filter"><option value="">Alle Sprachen</option></select>
+            <label> Language
+              <select id="language-filter"><option value="">All languages</option></select>
             </label>
           </div>
           <div class="selection-actions">
-            <button id="select-visible" class="text-button" type="button">Sichtbare markieren</button>
-            <button id="clear-visible" class="text-button" type="button">Sichtbare abwählen</button>
+            <button id="select-visible" class="text-button" type="button">Select matching copies</button>
+            <button id="clear-visible" class="text-button" type="button">Deselect matching copies</button>
           </div>
         </section>
 
-        <div id="result-summary" class="result-summary" aria-live="polite">Daten werden geladen …</div>
-        <div id="print-list" class="print-list" role="region" tabindex="0" aria-label="Liste der Drucke, scrollbar"></div>
+        <div id="result-summary" class="result-summary" aria-live="polite">Loading data …</div>
+        <div id="print-list" class="print-list" role="region" tabindex="0" aria-label="Scrollable list of copies"></div>
       </aside>
 
-      <section class="map-shell" aria-label="Karte der Druckwege">
+      <section class="map-shell" aria-label="Map of copy routes">
         <div id="map" class="map"></div>
-        <div class="map-legend" aria-label="Legende">
-          <button id="clear-focus" class="text-button" type="button" hidden>Hervorhebung aufheben</button>
+        <div class="map-legend" aria-label="Legend">
+          <button id="clear-focus" class="text-button" type="button" hidden>Clear highlight</button>
           <div id="connection-legend" class="legend-items">
-          <span><i class="legend-dot documented"></i> im Quellenzeitraum</span>
-          <span><i class="legend-dot inferred"></i> Annäherung / letzter Nachweis</span>
-          <span><i class="legend-line" style="border-top-style: solid"></i> datierte Folge ohne erkennbare Lücke</span>
-          <span><i class="legend-line"></i> Lücke / unklare Datierung / unsicherer Ort</span>
-          <span>Breitere Linie = mehr Exemplare · Klick zeigt die Drucke</span>
+          <span><i class="legend-dot documented"></i> within the source date range</span>
+          <span><i class="legend-dot inferred"></i> approximation / last record</span>
+          <span><i class="legend-line" style="border-top-style: solid"></i> dated sequence with no apparent gap</span>
+          <span><i class="legend-line"></i> gap / unclear date / uncertain place</span>
+          <span>Wider line = more copies · Click to view copies</span>
           </div>
           <div id="location-legend" class="legend-items" hidden>
-            <span><i class="legend-dot documented"></i> Letzte zuweisbare Orte im gewählten Jahr</span>
-            <span>Kreisfläche = Anzahl Exemplare · gestrichelter Rand = Land / Region · Klick zeigt die Drucke</span>
+            <span><i class="legend-dot documented"></i> Last identifiable locations for the selected year</span>
+            <span>Circle area = number of copies · Dashed outline = country / region · Click to view copies</span>
           </div>
         </div>
         <div id="map-message" class="map-message" hidden></div>
       </section>
     </main>
 
-    <aside id="bundle-panel" class="bundle-panel" aria-label="Ausgewählte Verbindung" hidden>
-      <div class="detail-toolbar"><strong>Verbindung erkunden</strong><button id="bundle-close" class="icon-button" type="button" aria-label="Verbindung schliessen">×</button></div>
+    <aside id="bundle-panel" class="bundle-panel" aria-label="Selected connection" hidden>
+      <div class="detail-toolbar"><strong>Explore connection</strong><button id="bundle-close" class="icon-button" type="button" aria-label="Close connection">×</button></div>
       <div id="bundle-content"></div>
     </aside>
     <aside id="detail-panel" class="detail-panel" aria-labelledby="detail-title" aria-hidden="true">
       <div class="detail-toolbar">
-        <p class="eyebrow">Einen Druck verfolgen</p>
-        <button id="detail-close" class="icon-button" type="button" aria-label="Detailansicht schliessen">×</button>
+        <p class="eyebrow">Trace a copy</p>
+        <button id="detail-close" class="icon-button" type="button" aria-label="Close copy details">×</button>
       </div>
       <div id="detail-content"></div>
     </aside>
 
     <aside id="about-panel" class="about-panel" aria-labelledby="about-title" aria-hidden="true">
       <div class="detail-toolbar">
-        <p class="eyebrow">Projektinformation</p>
-        <button id="about-close" class="icon-button" type="button" aria-label="Projektinformation schliessen">×</button>
+        <p class="eyebrow">Project information</p>
+        <button id="about-close" class="icon-button" type="button" aria-label="Close project information">×</button>
       </div>
-      <h2 id="about-title">Was diese Karte zeigt</h2>
-      <p>Geprüfte Koordinatenvarianten desselben Ortes werden für die Darstellung zusammengeführt. Yale wird dabei auf Stadtebene New Haven zugeordnet, Blickling Estate und Blickling Hall teilen einen Punkt. Die ursprünglichen Ortsbezeichnungen bleiben in den Nachweisen erhalten. Die unspezifischen Angaben «Europe» und «Western Europe» bleiben ohne lokalen Kartenpunkt. Länder und Regionen erscheinen nur in der Ortsansicht als repräsentative Punkte mit gestricheltem Rand. In der Verbindungsansicht bleiben sie in den Stationslisten erhalten, werden aber nicht als Linienhaltepunkte verwendet. Verbindungen über solche Lücken sind gestrichelt.</p>
-      <p>Die Ansicht «Aufenthaltsorte» bündelt die für das gewählte Jahr zugewiesenen Exemplare am selben Kartenpunkt. Die Kreisfläche ist proportional zur Anzahl unterschiedlicher Exemplare. Alle Kreise haben dieselbe Farbe. Der letzte zuweisbare Ort wird bis zum nächsten Nachweis fortgeschrieben, auch bei einem offenen Zeitraum wie «1868–». Die Quelldatierung steht beim jeweiligen Druck im Kontextfenster. Ein Quellenzeitraum kann selbst nur eine ungefähre Datierung sein und beweist keinen ununterbrochenen Aufenthalt. Länder- und Regionspunkte werden getrennt von Ortsangaben gebündelt. Die Häufigkeiten beschreiben ausschliesslich die ausgewählten Katalognachweise.</p>
-      <p>Gemeinsame Verbindungen werden gebündelt. Die Linienbreite wächst mit der Zahl unterschiedlicher Exemplare in der aktuellen Auswahl und im gewählten Jahr. Beide Richtungen teilen sich eine Linie; die jeweilige Richtung steht beim Druck im Kontextfenster. Bündel mit mindestens einem unsicheren Abschnitt werden gestrichelt. Diese Häufigkeit beschreibt die vorhandenen Katalogdaten, keinen historischen Verkehrsfluss. Beim Darüberfahren und Anklicken wird nur die jeweilige Verbindung hervorgehoben. «Druck verfolgen» zeigt den ganzen Weg eines Exemplars. Die Bündelungsstärke und Linienbreite lassen sich versuchsweise einstellen; die Breite wächst mit der Quadratwurzel der Exemplarzahl. Häufig belegte Orte bilden abhängig von Auswahl, Jahr und Zoom räumliche Gruppenzentren. Das Gewicht zählt unterschiedliche Exemplare an jedem Ort. Die Entfernung begrenzt die Zuordnung; die Gruppen sind keine historischen Gebiete. Verbindungen innerhalb einer Gruppe werden ausgeblendet, die Drucke bleiben in der Liste zugänglich.</p>
-      <p>Die Anwendung aggregiert offen zugängliche Daten aus GW, ISTC und MEI. Sie erzeugt keine neuen Katalog- oder Provenienznachweise, sondern erprobt ihre gemeinsame Visualisierung.</p>
-      <p>Gerade Linien verbinden belegte Stationen in der überlieferten Reihenfolge; sie behaupten keine konkrete Reiseroute. Der Zeitregler stellt keinen lückenlosen historischen Aufenthaltsnachweis her: Zwischen datierten Stationen wird der zuletzt bekannte Ort lediglich fortgeschrieben.</p>
-      <p>Durchgezogene Abschnitte verbinden benachbarte, zeitlich anschliessende oder überlappende Ortsnachweise ohne ausdrücklich markierte Ortsunsicherheit. Gestrichelte Abschnitte kennzeichnen fehlende oder widersprüchliche Datierungen, zeitliche Lücken, übersprungene Quellenblöcke oder unsichere Ortszuweisungen. Auch eine durchgezogene Linie beweist keine direkte Reise. Ein Klick auf die Linie erläutert ihre Einstufung und hebt die Route dauerhaft hervor.</p>
-      <p>Die Karte umfasst 484 direkt mit dem Korpus verknüpfte MEI-Exemplarnachweise. Indirekte Sammelbandbeziehungen bleiben in den Datentabellen erhalten; deren Provenienzen werden hier nicht automatisch übertragen. Datenabrufe: 23.–30. September 2026; Ortsprüfung: 1. Oktober 2026.</p><p>Manuell zugewiesene und unsichere Orte sind in den Details erläutert. Länder- und Regionsangaben erscheinen in der Ortsansicht als repräsentative Punkte mit gestricheltem Rand. Drei nicht lokalisierbare Einband- und Werkstattangaben bleiben ohne Kartenpunkt. Linien können solche Lücken überbrücken.</p><p>Vier historische oder Handelsnachweise haben keinen bekannten heutigen Aufbewahrungsort. Die Verbindungsansicht zeigt ihren letzten bekannten Ort mit einem offenen Punkt; in der Ortsansicht werden sie in der einheitlichen Kreisfarbe mitgezählt. Zeiträume stammen aus den Katalogen und können nur ungefähre Zuordnungen ausdrücken; undatierte oder widersprüchlich datierte Stationen sind nur in der Gesamtansicht enthalten.</p>
+      <h2 id="about-title">What this map shows</h2>
+      <p>This experimental project reuses publicly accessible catalogue and provenance data from GW, ISTC and MEI. It creates no new catalogue records. Titles, institutional names and source wording are retained in their original languages.</p>
+      <p>The map includes 484 MEI copy records directly linked to the corpus. Indirect bound-with relationships remain in the data tables; their provenance is not automatically transferred to other copies. Data retrieved: 23–30 September 2026. Place review: 1–3 October 2026.</p>
+      <p>The last identifiable location is carried forward until the next record, including open date ranges such as “1868–”. This does not establish continuous residence. The map includes later collecting and book-trade movements as well as early circulation.</p>
+      <p>Locations groups copies at the same map point for the selected year. Circle area is proportional to the number of distinct copies. Countries and regions use representative points with dashed outlines; these are not precise locations and are not stops on connection lines. Broad references to Europe or Western Europe have no map point.</p>
+      <p>Connections bundles shared links. Line width increases with the square root of the number of distinct copies and can be adjusted. Both directions share a line; individual directions appear in the connection panel. Hovering or clicking highlights only that connection. “Trace this copy” highlights the individual route.</p>
+      <p>Frequently recorded places act as cluster centres, weighted by distinct copies in the selection and year. Distance limits clustering, and zooming in separates places. These clusters are display aids, not historical territories. Links within a cluster are hidden; the copies remain accessible in the list.</p>
+      <p>Solid lines link adjacent, dated records with adjoining or overlapping periods and no explicitly flagged place uncertainty. Dashed lines indicate gaps, missing or conflicting dates, omitted records, or uncertain locations. Neither type establishes an actual travel route. The connection panel explains each link.</p>
+      <p>Reviewed coordinate variants share display points. Yale is shown at New Haven; Blickling Estate and Blickling Hall share a point. Original source data are retained. The disputed Fort-de-France reference in MEI 02128182 is displayed only as France, with the decision explained in the copy details.</p>
+      <p>Four historical or trade records have no known present holding location. Their last known locations remain marked as such. Undated or inconsistently dated stops are included in the full route view for 2026 but cannot reliably be assigned to earlier years. Unlocated binding and workshop records remain in the details.</p>
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261003-5" defer></script>
+    <script src="assets/app.js?v=20261005-1" defer></script>
   </body>
 </html>

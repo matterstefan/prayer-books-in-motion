@@ -6,9 +6,9 @@ const DATA_URLS = {
   stations: "data/expanded/tables/mei-itinerary-stations-resolved.csv",
 };
 
-const languageLabels = { lat: "Latein", dut: "Niederländisch", ita: "Italienisch", ger: "Deutsch", chu: "Kirchenslawisch", frm: "Mittelfranzösisch", fre: "Französisch", eng: "Englisch", spa: "Spanisch" };
-const stationLabels = { print_place: "Druckort", provenance_place: "Provenienzstation", current_holding: "Heutiger Aufbewahrungsort", last_known: "Letzter bekannter Aufenthaltsort" };
-const unresolvedLabels = { ambiguous: "mehrdeutig", country_only: "nur Land bekannt", needs_review: "weitere Prüfung nötig", non_geographic: "keine geografische Angabe" };
+const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
+const stationLabels = { print_place: "Printing place", provenance_place: "Provenance record", current_holding: "Current holding location", last_known: "Last known location" };
+const unresolvedLabels = { ambiguous: "ambiguous", country_only: "country only", needs_review: "further review needed", non_geographic: "no geographical information" };
 
 const state = {
   view: "connections",
@@ -96,18 +96,18 @@ function spatialPrecision(station) {
 }
 function isArea(station) { return ["country", "region"].includes(spatialPrecision(station)); }
 function spatialNote(station) {
-  if (excludedDisplayPoint(station)) return "Nur Grossraum angegeben; kein lokaler Kartenpunkt";
-  return isArea(station) ? `Nur ${spatialPrecision(station) === "country" ? "Land" : "Region"} bekannt; repräsentativer Punkt, kein genauer Aufenthaltsort` : "";
+  if (excludedDisplayPoint(station)) return "Broad area only; no local map point";
+  return isArea(station) ? `${spatialPrecision(station) === "country" ? "Country" : "Region"} only; representative point, not a precise location` : "";
 }
 function reviewedStation(station) {
   // Narrow correction: do not silently apply it to a changed future source record.
   if (station.station_id !== "02128182-p003-loc01" || station.place_authority_id !== "3570675" || station.time_start !== "1700" || station.time_end !== "1800") return station;
   return {...station, source_location_label: station.location_label,
     source_latitude: station.latitude, source_longitude: station.longitude,
-    location_label: "Frankreich, genauer Ort unbekannt", preferred_placename: "Frankreich", place_name: "Frankreich",
+    location_label: "France, precise location unknown", preferred_placename: "France", place_name: "France",
     latitude: "46", longitude: "2", country: "France", spatial_precision: "country",
-    display_uncertainty: "Nur Frankreich belegt; genauer Ort unbekannt",
-    location_resolution_note: "Darstellungsentscheidung vom 3. Oktober 2026: Gebietscode e-fr und Prüfung durch Stefan Matter stützen Frankreich. Widersprüchlicher Ortsverweis Fort-de-France (GeoNames 3570675) wird nicht kartiert. Originaldaten bleiben erhalten."};
+    display_uncertainty: "Only France is supported; precise location unknown",
+    location_resolution_note: "Display decision, 3 October 2026: area code e-fr and review by Stefan Matter support France. The conflicting Fort-de-France reference (GeoNames 3570675) is not mapped. Original data are retained."};
 }
 function excludedDisplayPoint(station) {
   return station.place_authority === "GeoNames" && ["6255148", "9408659"].includes(station.place_authority_id);
@@ -184,23 +184,23 @@ function routeAtYear(copyId, year) {
 
 function holdingLabel(copy) {
   return ["Historical Copy", "Trade Copy"].includes(copy.holding_institution_name)
-    ? "Heutiger Aufenthaltsort unbekannt" : copy.holding_institution_name || "Aufbewahrungsort nicht angegeben";
+    ? "Current location unknown" : copy.holding_institution_name || "Holding location not specified";
 }
 
 function segmentEvidence(from, to, all) {
   const reasons = [];
-  if ([from, to].some(s => s.display_uncertainty || s.spatial_precision === "country")) reasons.push("Ortszuweisung unsicher oder nur näherungsweise");
-  if ([from, to].some(s => s.date_warning)) reasons.push("Widersprüchliche Datierung");
+  if ([from, to].some(s => s.display_uncertainty || s.spatial_precision === "country")) reasons.push("Uncertain or approximate location");
+  if ([from, to].some(s => s.date_warning)) reasons.push("Conflicting dates");
   const middle = all.slice(all.indexOf(from) + 1, all.indexOf(to));
   const areas = middle.filter(s => isArea(s) || excludedDisplayPoint(s));
-  if (areas.length) reasons.push("Dazwischen: " + [...new Set(areas.map(s => s.location_label))].join("; ") + " (kein genauer Ort)");
-  if (middle.length || Number(to.source_order) - Number(from.source_order) > 1) reasons.push("Dazwischenliegende Nachweise nicht dargestellt");
+  if (areas.length) reasons.push("Intermediate records: " + [...new Set(areas.map(s => s.location_label))].join("; ") + " (no precise location)");
+  if (middle.length || Number(to.source_order) - Number(from.source_order) > 1) reasons.push("Intermediate records not mapped");
   const end = numeric(from.time_end), start = numeric(to.time_start);
-  if (end === null || start === null) reasons.push("Übergang nicht ausreichend datiert");
-  else if (start > end + 1) reasons.push("Zeitliche Lücke zwischen den Nachweisen");
-  else if (start < (numeric(from.time_start) ?? end)) reasons.push("Zeitliche Reihenfolge nicht eindeutig");
-  if (Number(from.source_order) === Number(to.source_order)) reasons.push("Orte desselben Quellenblocks; keine gesicherte Abfolge");
-  return { dashed: reasons.length > 0, description: reasons.length ? reasons.join("; ") : "Datierte Ortsfolge ohne erkennbare Lücke in den dargestellten Nachweisen" };
+  if (end === null || start === null) reasons.push("Transition insufficiently dated");
+  else if (start > end + 1) reasons.push("Gap between dated records");
+  else if (start < (numeric(from.time_start) ?? end)) reasons.push("Chronological order unclear");
+  if (Number(from.source_order) === Number(to.source_order)) reasons.push("Places in the same source block; sequence not established");
+  return { dashed: reasons.length > 0, description: reasons.length ? reasons.join("; ") : "Dated sequence with no apparent gap in the displayed records" };
 }
 
 function updateRouteFocus() {
@@ -306,7 +306,7 @@ function bundleRoutes(copies, year) {
   return [...groups.values()];
 }
 function bundleTitle(group) {
-  return group.centers.map(center=>`${center.members.length>1?"Ortsgruppe um ":""}${center.station.preferred_placename || center.station.place_name || center.station.location_label}`).join(" ↔ ");
+  return group.centers.map(center=>`${center.members.length>1?"Cluster around ":""}${center.station.preferred_placename || center.station.place_name || center.station.location_label}`).join(" ↔ ");
 }
 function selectSegment(group) {
   state.focusedCopy=null; state.focusedBundle=null; state.hoveredCopy=null; state.hoveredBundle=null;
@@ -321,11 +321,11 @@ function bundlePopup(group) {
   const entries=[...group.entries.values()];
   const name=s=>s.preferred_placename || s.place_name || s.location_label;
   return `<h3>${escapeHtml(bundleTitle(group))}</h3>
-    <p>${entries.length} ${entries.length===1?"Exemplar":"Exemplare"} auf dieser Verbindung</p>
-    <p class="popup-meta">«Ortsgruppe» bezeichnet zusammengefasste Orte, nicht mehrere Exemplare. Auch ein einzelnes Exemplar kann zwei Ortsgruppen verbinden.</p>
-    <p class="popup-meta">Orte dieser Verbindung: ${group.endpointNames.map(names=>names.map(escapeHtml).join(", ")).join(" ↔ ")}</p>
-    <p class="method-note">Häufig belegte Orte bilden die Gruppenzentren; nahe Orte können ihnen zugeordnet sein. Keine historischen Einzugsgebiete und keine gemeinsam belegte Reise. Die tatsächlichen Stationen stehen bei jedem Druck.</p>
-    <div class="bundle-list" tabindex="0" aria-label="Beteiligte Drucke">${entries.map(({copy,legs})=>`<div class="bundle-copy">
+    <p>${entries.length} ${entries.length===1?"copy":"copies"} on this connection</p>
+    <p class="popup-meta">A place cluster groups locations, not copies. A single copy can connect two place clusters.</p>
+    <p class="popup-meta">Places on this connection: ${group.endpointNames.map(names=>names.map(escapeHtml).join(", ")).join(" ↔ ")}</p>
+    <p class="method-note">Frequently recorded places form cluster centres and may include nearby places. These are not historical territories or evidence of a shared journey. Each copy lists its actual recorded places.</p>
+    <div class="bundle-list" tabindex="0" aria-label="Copies on this connection">${entries.map(({copy,legs})=>`<div class="bundle-copy">
       ${popupHtml(copy)}
       <p class="popup-meta">${[...new Set(legs.map(l=>`${name(l.from)} → ${name(l.to)}: ${l.evidence.description}`))].map(escapeHtml).join("<br>")}</p>
     </div>`).join("")}</div>`;
@@ -340,13 +340,13 @@ function colorFor(id) {
 
 function printYear(copy) {
   const station = printStation(copy.copy_id);
-  if (!station || (!station.time_start && !station.time_end)) return "ohne Datierung";
+  if (!station || (!station.time_start && !station.time_end)) return "undated";
   return station.time_start === station.time_end ? station.time_start : [station.time_start, station.time_end].filter(Boolean).join("–");
 }
 
 function searchable(copy) {
   const station = printStation(copy.copy_id);
-  return [copy.title, copy.holding_institution_name, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label].join(" ").toLocaleLowerCase("de");
+  return [copy.title, copy.holding_institution_name, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label].join(" ").toLocaleLowerCase("en");
 }
 
 function matchesFilters(copy) {
@@ -366,10 +366,10 @@ function routeSummary(copyId) {
 
 function popupHtml(copy) {
   const station = printStation(copy.copy_id);
-  return `<h3>${escapeHtml(copy.title || "Ohne Titel")}</h3>
-    <p class="popup-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")}, ${escapeHtml(printYear(copy))}<br>${escapeHtml(holdingLabel(copy))} · ${escapeHtml(copy.shelfmark || "ohne Signatur")}</p>
+  return `<h3>${escapeHtml(copy.title || "Untitled")}</h3>
+    <p class="popup-meta">${escapeHtml(station?.location_label || "Printing place unknown")}, ${escapeHtml(printYear(copy))}<br>${escapeHtml(holdingLabel(copy))} · ${escapeHtml(copy.shelfmark || "no shelfmark")}</p>
     <p class="popup-route">${escapeHtml(routeSummary(copy.copy_id))}</p>
-    <button class="popup-button" type="button" data-track-id="${escapeHtml(copy.copy_id)}">Druck verfolgen</button>`;
+    <button class="popup-button" type="button" data-track-id="${escapeHtml(copy.copy_id)}">Trace this copy</button>`;
 }
 
 function clearMapLayers() {
@@ -401,9 +401,9 @@ function locationPopup(group) {
   const entries = [...group.entries.values()];
   const names = [...new Set(entries.map(e => e.station.preferred_placename || e.station.place_name || e.station.location_label))];
   return `<h3>${names.map(escapeHtml).join(" / ")} · ${state.year}</h3>
-    <p>${entries.length} Exemplare am letzten zuweisbaren Ort bis ${state.year}.</p>
-    <p class="method-note">Gemeinsamer Kartenpunkt, kein Beleg für gleichzeitigen Besitz oder ununterbrochenen Aufenthalt.</p>
-    <div class="bundle-list" tabindex="0" aria-label="Drucke an diesem Kartenpunkt">${entries.map(({copy, station}) => `<div class="bundle-copy">${popupHtml(copy)}
+    <p>${entries.length} copies at the last identifiable location by ${state.year}.</p>
+    <p class="method-note">A shared map point does not establish simultaneous ownership or continuous residence.</p>
+    <div class="bundle-list" tabindex="0" aria-label="Copies at this map point">${entries.map(({copy, station}) => `<div class="bundle-copy">${popupHtml(copy)}
       <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${spatialNote(station) ? " · " + escapeHtml(spatialNote(station)) : ""}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
 
@@ -423,16 +423,16 @@ function renderLocations(copies, fit) {
     }).addTo(locationLayer);
     state.layers.push({layer: marker, copyIds: ids, marker: true});
     marker.bindPopup(locationPopup(group), {autoPan: false, maxWidth: 380});
-    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} Exemplare${isArea(group.station) ? " · " + spatialNote(group.station) : ""}`);
+    marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} copies${isArea(group.station) ? " · " + spatialNote(group.station) : ""}`);
     marker.on("click", () => { state.focusedCopy = null; state.focusedBundle = ids; state.hoveredBundle = null; updateRouteFocus(); });
     marker.on("mouseover", () => { state.hoveredBundle = ids; updateRouteFocus(); });
     marker.on("mouseout", () => { state.hoveredBundle = null; updateRouteFocus(); });
   }
   updateRouteFocus();
   const notPrinted = copies.filter(c => { const birth = stationAnchor(printStation(c.copy_id) || {}); return birth !== null && birth > state.year; }).length;
-  els["result-summary"].textContent = `${copies.length} Drucke ausgewählt · ${located} an ${groups.length} Kartenpunkten für ${state.year} · ${notPrinted} noch nicht gedruckt · ${copies.length - located - notPrinted} ohne zuweisbaren Ort`;
+  els["result-summary"].textContent = `${copies.length} copies selected · ${located} at ${groups.length} map points for ${state.year} · ${notPrinted} not yet printed · ${copies.length - located - notPrinted} without an identifiable location`;
   els["map-message"].hidden = groups.length > 0;
-  els["map-message"].textContent = copies.length ? "Für dieses Jahr und diese Auswahl ist kein Kartenpunkt zuweisbar." : "Für diese Auswahl sind keine Drucke markiert.";
+  els["map-message"].textContent = copies.length ? "No location can be assigned for this year and selection." : "No copies are selected for these filters.";
   if (fit && groups.length) map.fitBounds(groups.map(g => point(g.station)), {padding: [34, 34], maxZoom: 6});
 }
 
@@ -479,7 +479,7 @@ function renderMap({ fit = false } = {}) {
       marker.on("click", () => focusCopy(copy.copy_id));
       marker.on("mouseover", () => hoverCopy(copy.copy_id));
       marker.on("mouseout", () => hoverCopy(null));
-      marker.bindTooltip(`${copy.title || "Ohne Titel"} · ${location.station.location_label}${location.inferred ? " · Annäherung / letzter Nachweis" : ""}${location.station.display_uncertainty ? " · " + location.station.display_uncertainty : ""}`, { direction: "top", opacity: .94 });
+      marker.bindTooltip(`${copy.title || "Untitled"} · ${location.station.location_label}${location.inferred ? " · approximation / last record" : ""}${location.station.display_uncertainty ? " · " + location.station.display_uncertainty : ""}`, { direction: "top", opacity: .94 });
       bounds.push(point(location.station));
     }
   }
@@ -492,16 +492,16 @@ function renderMap({ fit = false } = {}) {
     const weight=state.lineScale * (2 + 2 * Math.sqrt(ids.size));
     const line=L.polyline(group.coordinates,{color:single?colorFor([...ids][0]):"#596674",weight,opacity:.55,dashArray:dashed?"6 5":null,bubblingMouseEvents:false}).addTo(routeLayer);
     state.layers.push({layer:line,segmentKey:group.key,copyIds:ids,copyId:single?[...ids][0]:null,baseWeight:weight,marker:false});
-    line.bindTooltip(`${ids.size} ${single?"Exemplar":"Exemplare"} · ${escapeHtml(bundleTitle(group))}`);
+    line.bindTooltip(`${ids.size} ${single?"copy":"copies"} · ${escapeHtml(bundleTitle(group))}`);
     line.on("click",()=>selectSegment(group));
     line.on("mouseover",()=>{state.hoveredSegment=group.key;updateRouteFocus()});
     line.on("mouseout",()=>{state.hoveredSegment=null;updateRouteFocus()});
   }
   updateRouteFocus();
 
-  els["result-summary"].textContent = `${copies.length} Drucke angezeigt · ${located} mit Kartenpunkt für ${state.year} · ${bundles.length} Linienbündel · nahe Verbindungen können beim Herauszoomen entfallen`;
+  els["result-summary"].textContent = `${copies.length} copies shown · ${located} with a map point for ${state.year} · ${bundles.length} connection bundles · short connections may disappear when zooming out`;
   els["map-message"].hidden = copies.length > 0;
-  els["map-message"].textContent = copies.length ? "" : "Für diese Auswahl sind keine Drucke markiert.";
+  els["map-message"].textContent = copies.length ? "" : "No copies are selected for these filters.";
   if (fit && bounds.length) map.fitBounds(bounds, { padding: [34, 34], maxZoom: 6 });
 }
 
@@ -511,9 +511,9 @@ function renderList() {
     const station = printStation(copy.copy_id);
     const checked = state.selected.has(copy.copy_id);
     return `<div class="print-card ${checked ? "" : "is-unselected"}" data-copy-card="${escapeHtml(copy.copy_id)}">
-      <input type="checkbox" data-copy-select="${escapeHtml(copy.copy_id)}" aria-label="Druck anzeigen: ${escapeHtml(copy.title || copy.copy_id)}" ${checked ? "checked" : ""}>
-      <button class="print-card-body" type="button" data-copy-detail="${escapeHtml(copy.copy_id)}"><span class="print-title">${escapeHtml(copy.title || "Ohne Titel")}</span>
-      <span class="print-meta">${escapeHtml(station?.location_label || "Druckort ungeklärt")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br>${escapeHtml(holdingLabel(copy))} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
+      <input type="checkbox" data-copy-select="${escapeHtml(copy.copy_id)}" aria-label="Show copy: ${escapeHtml(copy.title || copy.copy_id)}" ${checked ? "checked" : ""}>
+      <button class="print-card-body" type="button" data-copy-detail="${escapeHtml(copy.copy_id)}"><span class="print-title">${escapeHtml(copy.title || "Untitled")}</span>
+      <span class="print-meta">${escapeHtml(station?.location_label || "Printing place unknown")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br>${escapeHtml(holdingLabel(copy))} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
       </button></div>`;
   }).join("");
 }
@@ -527,15 +527,15 @@ function render({ fit = false, list = true } = {}) {
 
 function historicalStationTime(station) {
   if (station.time_start && station.time_end && station.time_start !== station.time_end) return `${station.time_start}–${station.time_end}`;
-  return station.time_start || station.time_end || "nicht datiert";
+  return station.time_start || station.time_end || "undated";
 }
 
 function stationTime(station) {
   if (station.station_type === "current_holding") {
-    const current = `Stand ${station.observation_date || CURRENT_YEAR}`;
+    const current = `As of ${station.observation_date || CURRENT_YEAR}`;
     if (!station.mergedProvenance) return current;
     const historical = historicalStationTime(station.mergedProvenance);
-    return historical === "nicht datiert" ? current : `Ortsnachweis ${historical}; ${current}`;
+    return historical === "undated" ? current : `Location record ${historical}; ${current}`;
   }
   return historicalStationTime(station);
 }
@@ -547,26 +547,26 @@ function openDetail(copyId) {
   const stations = compactStationsForDisplay(copyId);
   const print = printStation(copyId);
   els["detail-content"].innerHTML = `
-    <h2 id="detail-title">${escapeHtml(copy.title || "Ohne Titel")}</h2>
-    <p class="detail-lead">${escapeHtml(print?.location_label || "Druckort ungeklärt")}, ${escapeHtml(printYear(copy))} · ${escapeHtml(copy.shelfmark || "ohne Signatur")}</p>
+    <h2 id="detail-title">${escapeHtml(copy.title || "Untitled")}</h2>
+    <p class="detail-lead">${escapeHtml(print?.location_label || "Printing place unknown")}, ${escapeHtml(printYear(copy))} · ${escapeHtml(copy.shelfmark || "no shelfmark")}</p>
     <dl class="detail-facts">
       <dt>MEI</dt><dd><a href="${escapeHtml(copy.mei_url)}" target="_blank" rel="noopener">${escapeHtml(copy.mei_id)}</a></dd>
       <dt>ISTC</dt><dd><a href="https://data.cerl.org/istc/${escapeHtml(copy.host_istc_id)}" target="_blank" rel="noopener">${escapeHtml(copy.host_istc_id)}</a></dd>
-      <dt>GW</dt><dd>${escapeHtml(copy.gw_references || "nicht angegeben")}</dd>
-      <dt>Sprache</dt><dd>${escapeHtml(languageLabels[copy.language] || copy.language || "nicht angegeben")}</dd>
-      <dt>Aufbewahrung</dt><dd>${escapeHtml(holdingLabel(copy))}</dd>
+      <dt>GW</dt><dd>${escapeHtml(copy.gw_references || "not specified")}</dd>
+      <dt>Language</dt><dd>${escapeHtml(languageLabels[copy.language] || copy.language || "not specified")}</dd>
+      <dt>Holding institution</dt><dd>${escapeHtml(holdingLabel(copy))}</dd>
     </dl>
-    <h3>Überlieferte Stationen</h3>
-    <p class="method-note">Die Liste zeigt die Gesamtfolge. Zeitliche Lücken, undatierte Stationen und fehlende Ortsangaben erlauben keinen lückenlosen Aufenthaltsnachweis.</p>
+    <h3>Recorded locations</h3>
+    <p class="method-note">This list shows the full sequence. Gaps, undated records and missing places prevent a continuous account of the copy’s whereabouts.</p>
     <ol class="station-list">${stations.map(station => {
       const unresolved = spatialNote(station) || station.date_warning || station.display_uncertainty || unresolvedLabels[station.location_resolution_status];
       return `<li class="station-item"><span class="station-type">${escapeHtml(stationLabels[station.station_type] || station.station_type)}</span>
-        <span class="station-place">${escapeHtml(station.location_label || station.place_name || "Ort nicht angegeben")}</span>
+        <span class="station-place">${escapeHtml(station.location_label || station.place_name || "Place not specified")}</span>
         <span class="station-time">${escapeHtml(stationTime(station))}</span>
         ${unresolved ? `<span class="uncertain-badge">${escapeHtml(unresolved)}</span>` : ""}
-        ${station.mergedProvenance ? `<span class="station-note">Gleicher Kartenort zusammengefasst; der Ortsnachweis datiert nicht automatisch den Zugang zur heutigen Institution.</span>` : ""}
+        ${station.mergedProvenance ? `<span class="station-note">Records at the same map location are combined; the location record does not necessarily date acquisition by the present institution.</span>` : ""}
         ${station.location_resolution_note ? `<span class="station-note">${escapeHtml(station.location_resolution_note)}</span>` : ""}
-        ${(station.source_url || "").split(" | ").filter(url => /^https?:\/\//.test(url)).map(url => `<a class="station-source" href="${escapeHtml(url)}" target="_blank" rel="noopener">Quelle: ${escapeHtml(station.source_catalogue)}</a>`).join(" ")}
+        ${(station.source_url || "").split(" | ").filter(url => /^https?:\/\//.test(url)).map(url => `<a class="station-source" href="${escapeHtml(url)}" target="_blank" rel="noopener">Source: ${escapeHtml(station.source_catalogue)}</a>`).join(" ")}
       </li>`;
     }).join("")}</ol>`;
   els["about-panel"].classList.remove("is-open");
@@ -582,7 +582,7 @@ function closePanel(panel) {
 }
 
 function populateFilters() {
-  const places = [...new Set(state.copies.map(copy => printStation(copy.copy_id)?.location_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+  const places = [...new Set(state.copies.map(copy => printStation(copy.copy_id)?.location_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en"));
   const languages = [...new Set(state.copies.map(copy => copy.language).filter(Boolean))].sort();
   els["place-filter"].insertAdjacentHTML("beforeend", places.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(""));
   els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(languageLabels[value] || value)}</option>`).join(""));
@@ -601,7 +601,7 @@ function bindEvents() {
   map.on("click", () => { focusCopy(null); closePanel(els["detail-panel"]); });
   els["clear-focus"].addEventListener("click", () => { focusCopy(null); map.closePopup(); closePanel(els["detail-panel"]); });
   els["year-slider"].addEventListener("input", event => { state.year = Number(event.target.value); render({ list: false }); });
-  els["search-input"].addEventListener("input", event => { state.search = event.target.value.trim().toLocaleLowerCase("de"); render(); });
+  els["search-input"].addEventListener("input", event => { state.search = event.target.value.trim().toLocaleLowerCase("en"); render(); });
   els["place-filter"].addEventListener("change", event => { state.place = event.target.value; render({ fit: true }); });
   els["language-filter"].addEventListener("change", event => { state.language = event.target.value; render({ fit: true }); });
   els["print-list"].addEventListener("change", event => {
@@ -637,9 +637,9 @@ function bindEvents() {
 async function loadData() {
   try {
     const [copyResponse, stationResponse] = await Promise.all(Object.values(DATA_URLS).map(url => fetch(url)));
-    if (!copyResponse.ok || !stationResponse.ok) throw new Error("Datendateien konnten nicht geladen werden.");
+    if (!copyResponse.ok || !stationResponse.ok) throw new Error("Could not load the data files.");
     const [copies, stations] = await Promise.all([copyResponse.text().then(parseCsv), stationResponse.text().then(parseCsv)]);
-    state.copies = copies.filter(directCopy).sort((a, b) => (a.title || "").localeCompare(b.title || "", "de"));
+    state.copies = copies.filter(directCopy).sort((a, b) => (a.title || "").localeCompare(b.title || "", "en"));
     for (const station of stations.map(reviewedStation)) {
       if (!state.stationsByCopy.has(station.copy_id)) state.stationsByCopy.set(station.copy_id, []);
       state.stationsByCopy.get(station.copy_id).push(station);
@@ -648,9 +648,9 @@ async function loadData() {
     state.copies.forEach(copy => state.selected.add(copy.copy_id));
     populateFilters(); bindEvents(); render({ fit: true });
   } catch (error) {
-    els["result-summary"].textContent = "Die Kartendaten konnten nicht geladen werden.";
+    els["result-summary"].textContent = "Could not load the map data.";
     els["map-message"].hidden = false;
-    els["map-message"].textContent = `${error.message} Bitte die Seite über einen Webserver oder GitHub Pages öffnen.`;
+    els["map-message"].textContent = `${error.message} Please open the site through a web server or GitHub Pages.`;
   }
 }
 

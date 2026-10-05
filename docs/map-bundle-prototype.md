@@ -51,3 +51,5 @@ CSS-Pixel sind logische Anzeigeeinheiten, keine physischen Gerätepixel.
 Bei maximaler Zusammenfassung können sämtliche Linien verschwinden, weil
 beide Enden in derselben Ortsgruppe liegen. «Ortsgruppe» und «Exemplare auf
 dieser Verbindung» werden im Kontextfenster ausdrücklich unterschieden.
+
+Update 5 October 2026: the active slider maximum is now 600 CSS pixels, following user testing. Earlier limits above describe superseded experiments. The public interface is now English; source wording is retained.

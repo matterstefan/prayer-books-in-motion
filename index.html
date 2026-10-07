@@ -7,7 +7,7 @@
     <title>Prayer Books in Motion – Copies in motion</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261005-1">
+    <link rel="stylesheet" href="assets/styles.css?v=20261007-2">
   </head>
   <body>
     <header class="topbar">
@@ -33,8 +33,8 @@
             <button id="reset-button" class="text-button" type="button">Reset</button>
           </div>
           <input id="year-slider" class="year-slider" type="range" min="1450" max="2026" value="2026" step="1" aria-label="Choose a year">
-          <div class="year-scale" aria-hidden="true"><span>1450</span><span>1500</span><span>1600</span><span>1800</span><span>2026</span></div>
-          <p class="method-note">The last known location is carried forward between records. This does not establish continuous residence; lines are schematic and may bridge gaps.</p>
+          <div class="year-scale" aria-hidden="true"><span style="left: 0.00000000%">1450</span><span style="left: 8.68055556%">1500</span><span style="left: 26.04166667%">1600</span><span style="left: 60.76388889%">1800</span><span style="left: 100.00000000%">2026</span></div>
+          <p class="method-note">The last known location is carried forward between records. This does not mean that the copy remained there throughout that period. Lines are schematic and may bridge gaps.</p>
         </section>
 
         <details id="bundle-controls" class="bundle-controls">
@@ -43,7 +43,7 @@
           <input id="bundle-strength" type="range" min="0" max="600" step="4" value="32">
           <label for="line-scale">Line width: <output id="line-value">1.5</output> ×</label>
           <input id="line-scale" type="range" min="0.5" max="4" step="0.1" value="1.5">
-          <p>0: individual places. Increase up to 600 to explore broader clusters. CSS pixels relate to the map view, not physical screen pixels. Zooming in reduces the geographical reach. Links within a cluster are hidden; at extreme settings all lines may disappear.</p>
+          <p>0: individual places. Increase up to 600 to explore broader clusters. Zooming in reduces the geographical reach. Links within a cluster are hidden; at extreme settings all lines may disappear.</p>
         </details>
         <section class="filter-panel" aria-labelledby="filter-title">
           <h2 id="filter-title" class="visually-hidden">Select and filter copies</h2>
@@ -107,7 +107,7 @@
       <h2 id="about-title">What this map shows</h2>
       <p>This experimental project reuses publicly accessible catalogue and provenance data from GW, ISTC and MEI. It creates no new catalogue records. Titles, institutional names and source wording are retained in their original languages.</p>
       <p>The map includes 484 MEI copy records directly linked to the corpus. Indirect bound-with relationships remain in the data tables; their provenance is not automatically transferred to other copies. Data retrieved: 23–30 September 2026. Place review: 1–3 October 2026.</p>
-      <p>The last identifiable location is carried forward until the next record, including open date ranges such as “1868–”. This does not establish continuous residence. The map includes later collecting and book-trade movements as well as early circulation.</p>
+      <p>The last identifiable location is carried forward until the next record, including open date ranges such as “1868–”. This does not mean that the copy remained there throughout that period. The map includes later collecting and book-trade movements as well as early circulation.</p>
       <p>Locations groups copies at the same map point for the selected year. Circle area is proportional to the number of distinct copies. Countries and regions use representative points with dashed outlines; these are not precise locations and are not stops on connection lines. Broad references to Europe or Western Europe have no map point.</p>
       <p>Connections bundles shared links. Line width increases with the square root of the number of distinct copies and can be adjusted. Both directions share a line; individual directions appear in the connection panel. Hovering or clicking highlights only that connection. “Trace this copy” highlights the individual route.</p>
       <p>Frequently recorded places act as cluster centres, weighted by distinct copies in the selection and year. Distance limits clustering, and zooming in separates places. These clusters are display aids, not historical territories. Links within a cluster are hidden; the copies remain accessible in the list.</p>
@@ -117,6 +117,6 @@
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261005-1" defer></script>
+    <script src="assets/app.js?v=20261007-2" defer></script>
   </body>
 </html>

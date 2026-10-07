@@ -24,3 +24,23 @@ Die Ortsansicht bleibt vorläufig bestehen. Änderungen an Darstellung und
 Zeitlogik werden separat umgesetzt und getestet; diese Liste ändert keinen Code.
 
 Am 3. Oktober 2026 wurde die Rasterbündelung nach Nutzerrückmeldung durch gewichtete Ortsgruppen ersetzt. Beschreibung: `map-bundle-prototype.md`. 3D-Bögen bleiben eine spätere Idee.
+
+
+## Navigation – 7. Oktober 2026
+
+Rückmeldung: Auf dem 13.3-Zoll-MacBook ist die Darstellung gut lesbar.
+Der Kopf der Exemplardetails bleibt jetzt beim Scrollen sichtbar.
+Nach Öffnen eines Exemplars aus der Verbindungsliste führen Schliessen und
+Escape zurück zur unveränderten Liste mit gespeicherter Scrollposition.
+Die Exemplarhervorhebung bleibt erhalten, der Kartenausschnitt wird nicht verändert.
+Filter-, Zeit-, Zoom- und Regleränderungen verwerfen den Rücksprung zur dann
+überholten Verbindung. Details aus der Hauptliste erzeugen keinen Rücksprung.
+Geprüft mit DOM-/Leaflet-Stubs; visuelle Kontrolle im Browser steht aus.
+
+Weitere Rückmeldung vom 7. Oktober: «continuous residence» durch eine direkte
+Formulierung zum Verbleib des Exemplars ersetzt; CSS-Pixel-Erklärung entfernt.
+Jahresmarken proportional auf 1450–2026 positioniert (zuvor gleichmässig verteilt).
+Slider-Daumen 16 px, Skala um dessen halbe Breite eingerückt.
+Punktfarben, Hervorhebung und ausführliche Stationskommentare vorerst unverändert.
+Kopfbereich: Platznutzung auf kleinen Bildschirmen als offener Gestaltungspunkt
+vorgemerkt; möglicher Ansatz ist eine kompakte einzeilige Titelleiste.

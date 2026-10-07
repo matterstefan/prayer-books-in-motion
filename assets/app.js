@@ -40,7 +40,10 @@ const els = Object.fromEntries([
   "about-close", "map-message", "clear-focus", "view-connections", "view-locations", "connection-legend", "location-legend", "bundle-panel", "bundle-content", "bundle-close", "bundle-strength", "line-scale", "bundle-value", "line-value", "bundle-controls"
 ].map(id => [id, document.getElementById(id)]));
 
-const map = L.map("map", { zoomControl: true, minZoom: 2, worldCopyJump: true }).setView([48.8, 8.5], 4);
+const map = L.map("map", {
+  zoomControl: true, minZoom: 2, worldCopyJump: true,
+  zoomSnap: 0.25, zoomDelta: 0.25, wheelPxPerZoomLevel: 120
+}).setView([48.8, 8.5], 4);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -443,7 +446,7 @@ function renderLocations(copies, fit) {
   els["result-summary"].textContent = `${copies.length} copies selected · ${located} at ${groups.length} map points for ${state.year} · ${notPrinted} not yet printed · ${copies.length - located - notPrinted} without an identifiable location`;
   els["map-message"].hidden = groups.length > 0;
   els["map-message"].textContent = copies.length ? "No location can be assigned for this year and selection." : "No copies are selected for these filters.";
-  if (fit && groups.length) map.fitBounds(groups.map(g => point(g.station)), {padding: [34, 34], maxZoom: 6});
+  if (fit && groups.length) map.fitBounds(groups.map(g => point(g.station)), {padding: [24, 24], maxZoom: 6});
 }
 
 function setMapView(view) {
@@ -512,7 +515,7 @@ function renderMap({ fit = false } = {}) {
   els["result-summary"].textContent = `${copies.length} copies shown · ${located} with a map point for ${state.year} · ${bundles.length} connection bundles · short connections may disappear when zooming out`;
   els["map-message"].hidden = copies.length > 0;
   els["map-message"].textContent = copies.length ? "" : "No copies are selected for these filters.";
-  if (fit && bounds.length) map.fitBounds(bounds, { padding: [34, 34], maxZoom: 6 });
+  if (fit && bounds.length) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 6 });
 }
 
 function renderList() {

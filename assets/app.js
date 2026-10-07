@@ -16,6 +16,9 @@ const state = {
   lineScale: 1.5,
   focusedSegment: null,
   hoveredSegment: null,
+  selectedConnection: null,
+  returnConnection: null,
+  detailIsOpen: false,
   year: CURRENT_YEAR,
   copies: [],
   stationsByCopy: new Map(),
@@ -225,6 +228,8 @@ function updateRouteFocus() {
 }
 
 function focusCopy(copyId) {
+  state.selectedConnection = null;
+  state.returnConnection = null;
   state.focusedSegment = null; state.hoveredSegment = null;
   els["bundle-panel"].hidden = true;
   state.focusedCopy = copyId;
@@ -309,11 +314,14 @@ function bundleTitle(group) {
   return group.centers.map(center=>`${center.members.length>1?"Cluster around ":""}${center.station.preferred_placename || center.station.place_name || center.station.location_label}`).join(" ↔ ");
 }
 function selectSegment(group) {
+  state.selectedConnection = group;
+  state.returnConnection = null;
   state.focusedCopy=null; state.focusedBundle=null; state.hoveredCopy=null; state.hoveredBundle=null;
   state.focusedSegment=group.key; state.hoveredSegment=null;
   closePanel(els["detail-panel"]); closePanel(els["about-panel"]);
   els["bundle-content"].innerHTML=bundlePopup(group);
   els["bundle-panel"].hidden=false;
+  els["bundle-panel"].scrollTop=0;
   updateRouteFocus();
 }
 
@@ -373,6 +381,8 @@ function popupHtml(copy) {
 }
 
 function clearMapLayers() {
+  state.selectedConnection = null;
+  state.returnConnection = null;
   state.focusedSegment = null; state.hoveredSegment = null;
   els["bundle-panel"].hidden = true;
   state.hoveredCopy = null;
@@ -402,7 +412,7 @@ function locationPopup(group) {
   const names = [...new Set(entries.map(e => e.station.preferred_placename || e.station.place_name || e.station.location_label))];
   return `<h3>${names.map(escapeHtml).join(" / ")} · ${state.year}</h3>
     <p>${entries.length} copies at the last identifiable location by ${state.year}.</p>
-    <p class="method-note">A shared map point does not establish simultaneous ownership or continuous residence.</p>
+    <p class="method-note">Copies shown at the same map point were not necessarily held together or continuously kept there.</p>
     <div class="bundle-list" tabindex="0" aria-label="Copies at this map point">${entries.map(({copy, station}) => `<div class="bundle-copy">${popupHtml(copy)}
       <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${spatialNote(station) ? " · " + escapeHtml(spatialNote(station)) : ""}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
@@ -540,10 +550,16 @@ function stationTime(station) {
   return historicalStationTime(station);
 }
 
-function openDetail(copyId) {
+function openDetail(copyId, fromConnection = false) {
   const copy = state.copies.find(item => item.copy_id === copyId);
   if (!copy) return;
+  const returnTo = fromConnection && state.selectedConnection ? {
+    group: state.selectedConnection,
+    scrollTop: els["bundle-panel"].scrollTop,
+    copyId
+  } : null;
   focusCopy(copyId);
+  state.returnConnection = returnTo;
   const stations = compactStationsForDisplay(copyId);
   const print = printStation(copyId);
   els["detail-content"].innerHTML = `
@@ -572,11 +588,29 @@ function openDetail(copyId) {
   els["about-panel"].classList.remove("is-open");
   els["about-panel"].setAttribute("aria-hidden", "true");
   els["detail-panel"].classList.add("is-open");
+  state.detailIsOpen = true;
+  els["detail-panel"].scrollTop = 0;
   els["detail-panel"].setAttribute("aria-hidden", "false");
+  els["detail-close"].setAttribute("aria-label", returnTo ? "Back to connection" : "Close copy details");
+  els["detail-close"].setAttribute("title", returnTo ? "Back to connection" : "Close copy details");
   els["detail-close"].focus();
 }
 
+function closeDetail() {
+  const previous = state.returnConnection;
+  closePanel(els["detail-panel"]);
+  state.returnConnection = null;
+  if (!previous) return;
+  state.selectedConnection = previous.group;
+  els["bundle-panel"].hidden = false;
+  // Keep the selected copy highlighted and restore the existing list unchanged.
+  els["bundle-panel"].scrollTop = previous.scrollTop;
+  const button = els["bundle-content"].querySelector(`[data-track-id="${previous.copyId}"]`);
+  if (button) button.focus({preventScroll: true});
+}
+
 function closePanel(panel) {
+  if (panel === els["detail-panel"]) state.detailIsOpen = false;
   panel.classList.remove("is-open");
   panel.setAttribute("aria-hidden", "true");
 }
@@ -594,7 +628,7 @@ function bindEvents() {
     els[id].addEventListener("input",event=>{state[key]=Number(event.target.value);els[out].textContent=String(state[key]);render({list:false})});
   }
   els["bundle-close"].addEventListener("click",()=>focusCopy(null));
-  els["bundle-content"].addEventListener("click",event=>{const button=event.target.closest("[data-track-id]");if(button)openDetail(button.dataset.trackId)});
+  els["bundle-content"].addEventListener("click",event=>{const button=event.target.closest("[data-track-id]");if(button)openDetail(button.dataset.trackId, true)});
 
   els["view-connections"].addEventListener("click", () => setMapView("connections"));
   els["view-locations"].addEventListener("click", () => setMapView("locations"));
@@ -626,12 +660,12 @@ function bindEvents() {
     const button = event.target.closest("[data-track-id]");
     if (button) openDetail(button.dataset.trackId);
   });
-  els["detail-close"].addEventListener("click", () => closePanel(els["detail-panel"]));
+  els["detail-close"].addEventListener("click", closeDetail);
   els["about-button"].addEventListener("click", () => {
-    els["bundle-panel"].hidden=true; closePanel(els["detail-panel"]); els["about-panel"].classList.add("is-open"); els["about-panel"].setAttribute("aria-hidden", "false"); els["about-close"].focus();
+    state.returnConnection=null; state.selectedConnection=null; els["bundle-panel"].hidden=true; closePanel(els["detail-panel"]); els["about-panel"].classList.add("is-open"); els["about-panel"].setAttribute("aria-hidden", "false"); els["about-close"].focus();
   });
   els["about-close"].addEventListener("click", () => closePanel(els["about-panel"]));
-  document.addEventListener("keydown", event => { if (event.key === "Escape") { focusCopy(null); closePanel(els["detail-panel"]); closePanel(els["about-panel"]); } });
+  document.addEventListener("keydown", event => { if (event.key === "Escape") { if (state.detailIsOpen) { closeDetail(); return; } focusCopy(null); closePanel(els["about-panel"]); } });
 }
 
 async function loadData() {

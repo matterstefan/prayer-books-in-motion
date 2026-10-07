@@ -54,8 +54,14 @@ h3 { margin-bottom: .35rem; font-family: Georgia, "Times New Roman", serif; font
 .controls > .time-panel, .controls > .filter-panel, .controls > .result-summary { flex-shrink: 0; }
 .time-panel, .filter-panel { padding: 1rem 1.15rem; border-bottom: 1px solid var(--line); }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
-.year-slider { width: 100%; accent-color: var(--accent); }
-.year-scale { display: flex; justify-content: space-between; color: var(--muted); font-size: .75rem; }
+.year-slider { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 20px; margin: 0; background: transparent; cursor: pointer; }
+.year-slider::-webkit-slider-runnable-track { height: 4px; background: #c7cbd0; border-radius: 2px; }
+.year-slider::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 0; border-radius: 50%; background: var(--accent); }
+.year-slider::-moz-range-track { height: 4px; background: #c7cbd0; border-radius: 2px; }
+.year-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--accent); }
+.year-slider:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.year-scale { position: relative; height: 1.2rem; margin: 0 8px; color: var(--muted); font-size: .65rem; font-variant-numeric: tabular-nums; }
+.year-scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .method-note { margin: .6rem 0 0; color: var(--muted); font-size: .78rem; line-height: 1.35; }
 
 .quiet-button, .text-button, .icon-button, .popup-button {
@@ -126,6 +132,15 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .detail-panel.is-open, .about-panel.is-open { transform: translateX(0); }
 .detail-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
 .detail-toolbar .eyebrow { margin-bottom: 0; }
+.detail-panel > .detail-toolbar {
+  position: sticky;
+  top: -1.2rem;
+  z-index: 2;
+  margin: -1.2rem -1.2rem .8rem;
+  padding: .8rem 1.2rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
 .detail-lead { color: var(--muted); }
 .detail-facts { display: grid; grid-template-columns: 7.5rem 1fr; gap: .4rem .8rem; margin: 1rem 0; font-size: .88rem; }
 .detail-facts dt { color: var(--muted); }

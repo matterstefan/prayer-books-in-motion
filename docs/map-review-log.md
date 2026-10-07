@@ -44,3 +44,12 @@ Slider-Daumen 16 px, Skala um dessen halbe Breite eingerückt.
 Punktfarben, Hervorhebung und ausführliche Stationskommentare vorerst unverändert.
 Kopfbereich: Platznutzung auf kleinen Bildschirmen als offener Gestaltungspunkt
 vorgemerkt; möglicher Ansatz ist eine kompakte einzeilige Titelleiste.
+
+## Feinere Zoomstufen – 7. Oktober 2026
+
+Leaflet zoomSnap/zoomDelta auf 0.25; wheelPxPerZoomLevel auf 120.
+Automatischer Kartenausschnitt passt weiterhin alle darstellbaren Punkte ein,
+jetzt mit Viertelstufen und 24 statt 34 Pixel Rand. Keine feste Vergrösserung,
+die entfernte Punkte abschneiden könnte. Startjahr, Bündelungsstärke und
+Linienbreite bleiben unverändert. Bündelung mit gebrochenen Zoomwerten geprüft;
+praktische Kontrolle von Trackpad-/Mausgefühl im Browser steht aus.

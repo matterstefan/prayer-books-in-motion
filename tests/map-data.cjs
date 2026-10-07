@@ -147,6 +147,13 @@ for(const [key,center] of weighted.assignments){
  assert.equal(reversed.assignments.get(key).key,center.key);
  for(const member of center.members)assert.ok(center.copies.size>=member.copies.size);
 }
+for(const zoom of [3.25,3.5,3.75,4.25]) {
+ map.zoom=zoom;
+ const fractional=bundleRoutes(state.copies,2026);
+ assert.ok(fractional.length>0);
+ assert.ok(fractional.every(g=>g.coordinates.flat().every(Number.isFinite)));
+}
+map.zoom=3;
 const zoomedOut=bundleRoutes(state.copies,2026);map.zoom=8;
 const zoomedIn=bundleRoutes(state.copies,2026);
 assert.ok(zoomedIn.length>zoomedOut.length);

@@ -1,0 +1,50 @@
+name: Harvest three collections and digital links
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harvest-mei-corpus
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+      - name: Restore existing core queries
+        uses: actions/cache/restore@v6
+        with:
+          path: data/cache/mei-corpus
+          key: mei-corpus-unused-${{ github.run_id }}
+          restore-keys: mei-corpus-v1-
+      - name: Restore collection checkpoints
+        uses: actions/cache/restore@v6
+        with:
+          path: data/cache/collection-harvest
+          key: collection-harvest-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: collection-harvest-v1-
+      - name: Harvest collections and source links
+        env:
+          CERL_USER_AGENT: ${{ secrets.CERL_USER_AGENT }}
+        run: timeout --signal=INT --kill-after=60s 165m python3 -u scripts/harvest_collections.py
+      - name: Save completed queries
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: data/cache/collection-harvest
+          key: collection-harvest-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Download results and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prayer-books-three-collections
+          path: |
+            data/collections/
+            data/cache/collection-harvest/
+          retention-days: 30
+          if-no-files-found: error

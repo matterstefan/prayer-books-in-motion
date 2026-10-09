@@ -1,0 +1,29 @@
+name: Discover additional devotional editions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harvest-mei-corpus
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - name: Find editions outside the existing corpus
+        env:
+          CERL_USER_AGENT: ${{ secrets.CERL_USER_AGENT }}
+        run: python3 -u scripts/discover_devotional.py
+      - name: Download title list and source results
+        uses: actions/upload-artifact@v7
+        with:
+          name: additional-devotional-editions
+          path: data/discovery/
+          retention-days: 30
+          if-no-files-found: error

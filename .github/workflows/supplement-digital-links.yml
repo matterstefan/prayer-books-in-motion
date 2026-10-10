@@ -1,0 +1,38 @@
+name: Supplement GW and ISTC digital links
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: harvest-mei-corpus
+  cancel-in-progress: false
+jobs:
+  supplement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+      - name: Restore completed supplementary records
+        uses: actions/cache/restore@v6
+        with:
+          path: data/collections/digital-supplement/records
+          key: digital-supplement-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: digital-supplement-v1-
+      - name: Extract links from full catalogue pages
+        env:
+          CERL_USER_AGENT: ${{ secrets.CERL_USER_AGENT }}
+        run: timeout --signal=INT --kill-after=60s 345m python3 -u scripts/supplement_digital_links.py
+      - name: Save completed records
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: data/collections/digital-supplement/records
+          key: digital-supplement-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Download supplementary links
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prayer-books-digital-supplement
+          path: data/collections/digital-supplement/
+          retention-days: 30
+          if-no-files-found: error

@@ -2,8 +2,8 @@
 
 const CURRENT_YEAR = 2026;
 const DATA_URLS = {
-  copies: "data/expanded/tables/mei-copies.csv",
-  stations: "data/expanded/tables/mei-itinerary-stations-resolved.csv",
+  copies: "data/map/copies.csv?v=20261010-1",
+  stations: "data/map/stations.csv?v=20261010-1",
 };
 
 const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
@@ -23,6 +23,7 @@ const state = {
   copies: [],
   stationsByCopy: new Map(),
   selected: new Set(),
+  collections: new Set(["core"]),
   search: "",
   place: "",
   language: "",
@@ -34,6 +35,7 @@ const state = {
 };
 
 const els = Object.fromEntries([
+  "collection-core", "collection-liturgy", "collection-devotional",
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
   "detail-panel", "detail-content", "detail-close", "about-panel", "about-button",
@@ -100,12 +102,13 @@ function spatialPrecision(station) {
   }
   return station.spatial_precision || "locality";
 }
-function isArea(station) { return ["country", "region"].includes(spatialPrecision(station)); }
+function isArea(station) { return ["country", "region", "area"].includes(spatialPrecision(station)); }
 function spatialNote(station) {
   if (excludedDisplayPoint(station)) return "Broad area only; no local map point";
   return isArea(station) ? `${spatialPrecision(station) === "country" ? "Country" : "Region"} only; representative point, not a precise location` : "";
 }
 function reviewedStation(station) {
+  if (station.geolocation_certainty === "probable") station = {...station, display_uncertainty: "Probable place identification"};
   // Narrow correction: do not silently apply it to a changed future source record.
   if (station.station_id !== "02128182-p003-loc01" || station.place_authority_id !== "3570675" || station.time_start !== "1700" || station.time_end !== "1800") return station;
   return {...station, source_location_label: station.location_label,
@@ -116,11 +119,12 @@ function reviewedStation(station) {
     location_resolution_note: "Display decision, 3 October 2026: area code e-fr and review by Stefan Matter support France. The conflicting Fort-de-France reference (GeoNames 3570675) is not mapped. Original data are retained."};
 }
 function excludedDisplayPoint(station) {
+  if (["suppress_broad_area", "no_locality_point"].includes(station.map_point_policy)) return true;
   return station.place_authority === "GeoNames" && ["6255148", "9408659"].includes(station.place_authority_id);
 }
 function hasPoint(station) { return !excludedDisplayPoint(station) && station.latitude !== "" && station.longitude !== "" && Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude)) && Math.abs(Number(station.latitude)) <= 90 && Math.abs(Number(station.longitude)) <= 180; }
 function point(station) {
-  const raw = [Number(station.latitude), Number(station.longitude)];
+  const raw = station.display_latitude && station.display_longitude ? [Number(station.display_latitude), Number(station.display_longitude)] : [Number(station.latitude), Number(station.longitude)];
   return displayPointAliases.get(raw.map(n => n.toFixed(5)).join(",")) || raw;
 }
 function numeric(value) { return value == null || value === "" || !Number.isFinite(Number(value)) ? null : Number(value); }
@@ -360,9 +364,12 @@ function searchable(copy) {
   return [copy.title, copy.holding_institution_name, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label].join(" ").toLocaleLowerCase("en");
 }
 
+function copyCollections(copy) { return (copy.collection_groups || "core").split(" | "); }
+function matchesCollection(copy) { return copyCollections(copy).some(group => state.collections.has(group)); }
+
 function matchesFilters(copy) {
   const station = printStation(copy.copy_id);
-  return (!state.search || searchable(copy).includes(state.search)) &&
+  return matchesCollection(copy) && (!state.search || searchable(copy).includes(state.search)) &&
     (!state.place || station?.location_label === state.place) &&
     (!state.language || copy.language === state.language);
 }
@@ -578,7 +585,7 @@ function openDetail(copyId, fromConnection = false) {
     <h3>Recorded locations</h3>
     <p class="method-note">This list shows the full sequence. Gaps, undated records and missing places prevent a continuous account of the copy’s whereabouts.</p>
     <ol class="station-list">${stations.map(station => {
-      const unresolved = spatialNote(station) || station.date_warning || station.display_uncertainty || unresolvedLabels[station.location_resolution_status];
+      const unresolved = spatialNote(station) || station.date_warning || station.display_uncertainty || (station.geolocation_certainty === "probable" ? "Probable place identification" : "") || unresolvedLabels[station.location_resolution_status];
       return `<li class="station-item"><span class="station-type">${escapeHtml(stationLabels[station.station_type] || station.station_type)}</span>
         <span class="station-place">${escapeHtml(station.location_label || station.place_name || "Place not specified")}</span>
         <span class="station-time">${escapeHtml(stationTime(station))}</span>
@@ -625,7 +632,17 @@ function populateFilters() {
   els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(languageLabels[value] || value)}</option>`).join(""));
 }
 
+function changeCollection(group, checked) {
+  checked ? state.collections.add(group) : state.collections.delete(group);
+  focusCopy(null);
+  closePanel(els["detail-panel"]);
+  render();
+}
+
 function bindEvents() {
+  for (const group of ["core", "liturgy", "devotional"]) {
+    els[`collection-${group}`].addEventListener("change", event => changeCollection(group, event.target.checked));
+  }
   map.on("zoomend",()=>{if(state.view==="connections")render({list:false})});
   for (const [id,key,out] of [["bundle-strength","bundleStrength","bundle-value"],["line-scale","lineScale","line-value"]]) {
     els[id].addEventListener("input",event=>{state[key]=Number(event.target.value);els[out].textContent=String(state[key]);render({list:false})});
@@ -654,6 +671,9 @@ function bindEvents() {
   els["select-visible"].addEventListener("click", () => { filteredCopies().forEach(copy => state.selected.add(copy.copy_id)); render({ fit: true }); });
   els["clear-visible"].addEventListener("click", () => { filteredCopies().forEach(copy => state.selected.delete(copy.copy_id)); render(); });
   els["reset-button"].addEventListener("click", () => {
+    state.collections = new Set(["core"]);
+    for (const group of ["core", "liturgy", "devotional"]) els[`collection-${group}`].checked = group === "core";
+    focusCopy(null); closePanel(els["detail-panel"]);
     state.year = CURRENT_YEAR; state.search = ""; state.place = ""; state.language = ""; state.focusedCopy = null;
     state.copies.forEach(copy => state.selected.add(copy.copy_id));
     els["year-slider"].value = CURRENT_YEAR; els["search-input"].value = ""; els["place-filter"].value = ""; els["language-filter"].value = "";
@@ -683,6 +703,9 @@ async function loadData() {
     }
     for (const values of state.stationsByCopy.values()) values.sort((a, b) => Number(a.source_order) - Number(b.source_order) || Number(a.place_order_within_source) - Number(b.place_order_within_source));
     state.copies.forEach(copy => state.selected.add(copy.copy_id));
+    for (const group of ["core", "liturgy", "devotional"]) {
+      document.getElementById(`count-${group}`).textContent = state.copies.filter(copy => copyCollections(copy).includes(group)).length.toLocaleString("en") + " copies";
+    }
     populateFilters(); bindEvents(); render({ fit: true });
   } catch (error) {
     els["result-summary"].textContent = "Could not load the map data.";

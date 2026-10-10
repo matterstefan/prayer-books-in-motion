@@ -2,8 +2,8 @@
 
 const CURRENT_YEAR = 2026;
 const DATA_URLS = {
-  copies: "data/map/copies.csv?v=20261010-1",
-  stations: "data/map/stations.csv?v=20261010-1",
+  copies: "data/map/copies.csv?v=20261010-2",
+  stations: "data/map/stations.csv?v=20261010-2",
 };
 
 const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
@@ -12,6 +12,7 @@ const unresolvedLabels = { ambiguous: "ambiguous", country_only: "country only",
 
 const state = {
   view: "connections",
+  locationStyle: "circles",
   bundleStrength: 32,
   lineScale: 1.5,
   focusedSegment: null,
@@ -35,6 +36,7 @@ const state = {
 };
 
 const els = Object.fromEntries([
+  "location-style-controls", "style-circles", "style-heatmap", "heatmap-legend", "circle-legend",
   "collection-core", "collection-liturgy", "collection-devotional",
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
@@ -220,7 +222,7 @@ function updateRouteFocus() {
   for (const item of state.layers) {
     const active = segment ? item.segmentKey === segment : highlighted && [...(item.copyIds || [item.copyId])].some(id => highlighted.has(id));
     const muted = (segment || highlighted) && !active;
-    item.layer.setStyle({ weight: active ? (item.marker ? 3 : Math.max(6, item.baseWeight || 3)) : (item.marker ? 2 : item.baseWeight || 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .15 : 1 } : {}) });
+    item.layer.setStyle({ weight: active ? (item.marker ? 3 : Math.max(6, item.baseWeight || 3)) : (item.marker ? 2 : item.baseWeight || 3), opacity: muted ? .12 : active ? 1 : .55, ...(item.marker ? { fillOpacity: muted ? .08 : active ? .65 : (item.baseFillOpacity ?? 1) } : {}) });
     if (active) item.layer.bringToFront();
   }
   if (highlighted && state.view === "connections") for (const id of highlighted) {
@@ -391,6 +393,7 @@ function popupHtml(copy) {
 }
 
 function clearMapLayers() {
+  if (heatCanvas) heatCanvas.hidden = true;
   state.selectedConnection = null;
   state.returnConnection = null;
   state.focusedSegment = null; state.hoveredSegment = null;
@@ -427,8 +430,81 @@ function locationPopup(group) {
       <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${spatialNote(station) ? " · " + escapeHtml(spatialNote(station)) : ""}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
 
+// Screen-space density: zooming changes the geographical reach of a 28px kernel.
+const HEAT_RADIUS = 28;
+const HEAT_STEP = 4;
+let heatCanvas = null;
+let heatReference = { key: null, maximum: 1 };
+function densityField(points, width, height) {
+  const cols = Math.ceil(width / HEAT_STEP), rows = Math.ceil(height / HEAT_STEP);
+  const values = new Float32Array(cols * rows);
+  const radius = HEAT_RADIUS / HEAT_STEP;
+  for (const {x, y, weight} of points) {
+    const cx = x / HEAT_STEP, cy = y / HEAT_STEP;
+    for (let iy = Math.max(0, Math.floor(cy-radius)); iy < Math.min(rows, Math.ceil(cy+radius)); iy++) {
+      for (let ix = Math.max(0, Math.floor(cx-radius)); ix < Math.min(cols, Math.ceil(cx+radius)); ix++) {
+        const d2 = ((ix+.5-cx)**2 + (iy+.5-cy)**2) / (radius*radius);
+        if (d2 <= 1) values[iy*cols+ix] += weight * Math.exp(-4.5*d2);
+      }
+    }
+  }
+  return {values, cols, rows};
+}
+function heatPotential(copies) {
+  const places = new Map();
+  for (const copy of copies) {
+    const seen = new Set();
+    for (const station of copyStations(copy.copy_id)) {
+      if (!hasPoint(station) || isArea(station)) continue;
+      const coordinates = point(station), key = coordinates.join(',');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!places.has(key)) places.set(key, {coordinates, weight:0});
+      places.get(key).weight++;
+    }
+  }
+  return [...places.values()];
+}
+function drawHeatmap(copies, groups) {
+  if (!heatCanvas) {
+    heatCanvas = document.createElement('canvas');
+    heatCanvas.className = 'density-canvas';
+    heatCanvas.setAttribute('aria-hidden', 'true');
+    map.getContainer().appendChild(heatCanvas);
+  }
+  heatCanvas.hidden = false;
+  const size = map.getSize(), center = map.getCenter();
+  const project = (coordinates, weight) => ({...map.latLngToContainerPoint(coordinates), weight});
+  const key = [map.getZoom(), center.lat, center.lng, size.x, size.y, copies.map(c=>c.copy_id).join(',')].join('|');
+  if (key !== heatReference.key) {
+    // All recorded localities form a time-independent reference envelope.
+    // A copy counts once per candidate locality, not once per provenance record.
+    const potential = heatPotential(copies).map(p=>project(p.coordinates,p.weight));
+    const field = densityField(potential,size.x,size.y);
+    let maximum = 0;
+    for (const value of field.values) maximum = Math.max(maximum,value);
+    heatReference = {key, maximum: Math.max(1,maximum)};
+  }
+  const field = densityField(groups.map(g=>project(point(g.station),g.entries.size)),size.x,size.y);
+  heatCanvas.width = field.cols; heatCanvas.height = field.rows;
+  heatCanvas.style.width = size.x+'px'; heatCanvas.style.height = size.y+'px';
+  const ctx = heatCanvas.getContext('2d'), pixels = ctx.createImageData(field.cols,field.rows);
+  const stops = [[255,224,130],[246,147,64],[213,64,54],[117,19,47]];
+  for (let i=0;i<field.values.length;i++) {
+    const ratio = Math.min(1,field.values[i]/heatReference.maximum);
+    if (ratio<=0) continue;
+    const intensity=Math.sqrt(ratio), position=intensity*(stops.length-1);
+    const lo=Math.min(stops.length-2,Math.floor(position)), blend=position-lo;
+    for(let c=0;c<3;c++)pixels.data[i*4+c]=Math.round(stops[lo][c]*(1-blend)+stops[lo+1][c]*blend);
+    pixels.data[i*4+3]=Math.round(190*Math.min(1,intensity*3));
+  }
+  ctx.putImageData(pixels,0,0);
+}
+
 function renderLocations(copies, fit) {
-  const groups = groupLocations(copies, state.year);
+  const heat = state.locationStyle === "heatmap";
+  const groups = groupLocations(copies, state.year).filter(g => !heat || !isArea(g.station));
+  if (heat) drawHeatmap(copies, groups);
   let located = 0;
   // Large circles first so smaller nearby circles remain selectable.
   groups.sort((a, b) => b.entries.size - a.entries.size);
@@ -436,12 +512,12 @@ function renderLocations(copies, fit) {
     const entries = [...group.entries.values()], ids = new Set(group.entries.keys());
     located += entries.length;
     const marker = L.circleMarker(point(group.station), {
-      radius: 6 * Math.sqrt(entries.length), color: "#75132f", weight: 2,
-      fillColor: "#75132f", fillOpacity: 1,
+      radius: heat ? 4 : 6 * Math.sqrt(entries.length), color: "#75132f", weight: 2,
+      fillColor: "#75132f", fillOpacity: heat ? .75 : .22,
       dashArray: isArea(group.station) ? "3 3" : null,
       bubblingMouseEvents: false
     }).addTo(locationLayer);
-    state.layers.push({layer: marker, copyIds: ids, marker: true});
+    state.layers.push({layer: marker, copyIds: ids, marker: true, baseFillOpacity: heat ? .75 : .22});
     marker.bindPopup(locationPopup(group), {autoPan: false, maxWidth: 380});
     marker.bindTooltip(`${escapeHtml(group.station.preferred_placename || group.station.place_name || group.station.location_label)} · ${entries.length} copies${isArea(group.station) ? " · " + spatialNote(group.station) : ""}`);
     marker.on("click", () => { state.focusedCopy = null; state.focusedBundle = ids; state.hoveredBundle = null; updateRouteFocus(); });
@@ -450,7 +526,7 @@ function renderLocations(copies, fit) {
   }
   updateRouteFocus();
   const notPrinted = copies.filter(c => { const birth = stationAnchor(printStation(c.copy_id) || {}); return birth !== null && birth > state.year; }).length;
-  els["result-summary"].textContent = `${copies.length} copies selected · ${located} at ${groups.length} map points for ${state.year} · ${notPrinted} not yet printed · ${copies.length - located - notPrinted} without an identifiable location`;
+  els["result-summary"].textContent = `${copies.length} copies selected · ${located} at ${groups.length} map points for ${state.year} · ${notPrinted} not yet printed · ${copies.length - located - notPrinted} ${heat ? "without a local map point" : "without an identifiable location"}`;
   els["map-message"].hidden = groups.length > 0;
   els["map-message"].textContent = copies.length ? "No location can be assigned for this year and selection." : "No copies are selected for these filters.";
   if (fit && groups.length) map.fitBounds(groups.map(g => point(g.station)), {padding: [24, 24], maxZoom: 6});
@@ -459,6 +535,7 @@ function renderLocations(copies, fit) {
 function setMapView(view) {
   state.view = view;
   els["bundle-controls"].hidden = view !== "connections";
+  els["location-style-controls"].hidden = view !== "locations";
   map.closePopup();
   els["view-connections"].setAttribute("aria-pressed", String(view === "connections"));
   els["view-locations"].setAttribute("aria-pressed", String(view === "locations"));
@@ -643,7 +720,19 @@ function bindEvents() {
   for (const group of ["core", "liturgy", "devotional"]) {
     els[`collection-${group}`].addEventListener("change", event => changeCollection(group, event.target.checked));
   }
-  map.on("zoomend",()=>{if(state.view==="connections")render({list:false})});
+  map.on("zoomend",()=>{render({list:false})});
+  map.on("moveend",()=>{if(state.view==="locations" && state.locationStyle==="heatmap")render({list:false})});
+  map.on("resize",()=>{if(state.view==="locations")render({list:false})});
+  map.on("movestart zoomstart",()=>{if(heatCanvas)heatCanvas.hidden=true});
+  for (const style of ["circles","heatmap"]) {
+    els[`style-${style}`].addEventListener("click",()=>{
+      state.locationStyle=style;
+      for(const value of ["circles","heatmap"])els[`style-${value}`].setAttribute("aria-pressed",String(value===style));
+      els["heatmap-legend"].hidden=style!=="heatmap";
+      els["circle-legend"].hidden=style!=="circles";
+      map.closePopup();render({list:false});
+    });
+  }
   for (const [id,key,out] of [["bundle-strength","bundleStrength","bundle-value"],["line-scale","lineScale","line-value"]]) {
     els[id].addEventListener("input",event=>{state[key]=Number(event.target.value);els[out].textContent=String(state[key]);render({list:false})});
   }

@@ -1,0 +1,27 @@
+{
+  "candidate_references": 4120,
+  "unique_trimmed_urls": 3882,
+  "source_references": {
+    "MEI": 878,
+    "GW": 3242
+  },
+  "source_based_classification": {
+    "digitisation_candidate_unverified": 3555,
+    "watermark_resource_candidate": 128,
+    "provenance_image_reference": 199
+  },
+  "attribution": {
+    "copy_reference_present": 725,
+    "edition_only": 3157
+  },
+  "checked_urls": 15,
+  "check_status": {
+    "access_challenge": 1,
+    "reachable_unverified": 9,
+    "http_error_requires_review": 3,
+    "environment_access_blocked": 1,
+    "request_failed_requires_review": 1
+  },
+  "remaining_unchecked": 3867,
+  "full_scans_verified": 0
+}

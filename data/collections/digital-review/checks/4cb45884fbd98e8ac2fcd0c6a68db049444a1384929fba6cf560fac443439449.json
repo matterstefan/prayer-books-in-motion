@@ -1,0 +1,8 @@
+{
+  "url": "https://doi.org/10.3931/e-rara-68080",
+  "checked_at": "2026-10-10T19:43:29.377054+00:00",
+  "full_scan_verified": false,
+  "status": "environment_access_blocked",
+  "error_type": "URLError",
+  "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+}

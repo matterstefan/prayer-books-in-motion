@@ -1,0 +1,11 @@
+{
+  "url": "https://onk.snk.sk/view/25c528a7-dd97-4adb-b2e4-e3d6e1fb87ab?page=eb1b0ac5-0dbd-4d49-9f35-0aaeb9e703af",
+  "checked_at": "2026-10-10T19:43:00.675417+00:00",
+  "full_scan_verified": false,
+  "http_status": 200,
+  "final_url": "https://dikda.snk.sk/view/25c528a7-dd97-4adb-b2e4-e3d6e1fb87ab?page=eb1b0ac5-0dbd-4d49-9f35-0aaeb9e703af",
+  "content_type": "text/html",
+  "title": "DIKDA | Digitálna knižnica SNK",
+  "sample_bytes": 6688,
+  "status": "reachable_unverified"
+}

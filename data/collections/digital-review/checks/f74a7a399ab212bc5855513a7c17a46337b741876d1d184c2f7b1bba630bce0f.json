@@ -1,0 +1,11 @@
+{
+  "url": "http://gutenberg.beic.it/webclient/DeliveryManager?pid=2952357&custom_att_2=simple_viewer&pds_handle=",
+  "checked_at": "2026-10-10T23:06:18.811165+00:00",
+  "full_scan_verified": false,
+  "http_status": 200,
+  "final_url": "https://preserver.beic.it/delivery/DeliveryManagerServlet?dps_pid=IE4986615",
+  "content_type": "text/html;charset=UTF-8",
+  "title": "Leggenda di sant&#x27;Alessio",
+  "sample_bytes": 14064,
+  "status": "reachable_unverified"
+}

@@ -1,0 +1,8 @@
+{
+  "url": "https://archivi.cini.it/storiaarte/detail/14294/stampa-14294.html?currentNumber=0&jsonVal=%7B%22jsonVal%22%3A%7B%22query%22%3A%5B%22record_LDC_LDCN_string%3A%5C%22Biblioteca+Civica+Angelo+Mai%5C%22%22%5D%2C%22fieldDate%22%3A%22dataNormal%22%2C%22_perPage%22%3A21%2C%22accountName_string%22%3A%5B%22storiaarte%22%5D%2C%22archiveName_string%22%3A%5B%22storiaartexilografie%22%5D%7D%7D&startPage=",
+  "checked_at": "2026-10-10T23:06:31.379848+00:00",
+  "full_scan_verified": false,
+  "status": "request_failed_requires_review",
+  "error_type": "TimeoutError",
+  "error": "The read operation timed out"
+}

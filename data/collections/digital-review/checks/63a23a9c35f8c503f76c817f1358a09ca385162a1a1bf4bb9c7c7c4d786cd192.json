@@ -1,0 +1,11 @@
+{
+  "url": "http://arkyves.org/r/view/cerlpda_1c45b/him_CERLPDA",
+  "checked_at": "2026-10-10T23:08:45.090052+00:00",
+  "full_scan_verified": false,
+  "http_status": 200,
+  "final_url": "https://pda.cerl.org/id/cerlpda_1c45b",
+  "content_type": "text/html; charset=utf-8",
+  "title": "CERL PDA · cerlpda_1c45b",
+  "sample_bytes": 14402,
+  "status": "reachable_unverified"
+}

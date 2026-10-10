@@ -1,0 +1,11 @@
+{
+  "url": "http://watermark.kb.nl/search/family/type/biblReferences/data/ILC%200217",
+  "checked_at": "2026-10-10T23:06:49.343878+00:00",
+  "full_scan_verified": false,
+  "http_status": 200,
+  "final_url": "https://watermark.kb.nl/search/list/",
+  "content_type": "text/html; charset=UTF-8",
+  "title": "Watermarks in incunabula printed in the low countries",
+  "sample_bytes": 5919,
+  "status": "reachable_unverified"
+}

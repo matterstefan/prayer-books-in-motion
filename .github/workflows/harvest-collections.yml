@@ -13,7 +13,7 @@ concurrency:
 jobs:
   harvest:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v6
       - name: Restore existing core queries
@@ -31,7 +31,7 @@ jobs:
       - name: Harvest collections and source links
         env:
           CERL_USER_AGENT: ${{ secrets.CERL_USER_AGENT }}
-        run: timeout --signal=INT --kill-after=60s 165m python3 -u scripts/harvest_collections.py
+        run: timeout --signal=INT --kill-after=60s 345m python3 -u scripts/harvest_collections.py --gw-minutes 300
       - name: Save completed queries
         if: always()
         uses: actions/cache/save@v6

@@ -1,0 +1,16 @@
+{
+  "stations": 20498,
+  "copies": 5297,
+  "newly_located_stations": 900,
+  "stations_with_coordinates": 20279,
+  "stations_without_coordinates": 219,
+  "locality_route_points": 19993,
+  "remaining_groups": 54,
+  "remaining_group_categories": {
+    "Ortsidentifikation offen": 9,
+    "Keine verwertbare Ortsangabe": 27,
+    "Nur Gebiet, kein Ortsmarker": 14,
+    "Mehrdeutige oder mehrteilige Druckangabe": 4
+  },
+  "live_website_changed": false
+}

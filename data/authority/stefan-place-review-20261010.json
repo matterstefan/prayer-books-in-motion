@@ -1,0 +1,69 @@
+{
+  "review_date": "2026-10-10",
+  "applied_to_map": false,
+  "decisions": [
+    {
+      "review_id": "ORT-0cc7e8bbd8",
+      "source_label": "Burgdorf",
+      "assigned_place": "Burgdorf, Kanton Bern, Schweiz",
+      "status": "confirmed",
+      "note": "Zuordnung durch Stefan Matter: Schweizer Ort im Kanton Bern. Bisherige Länderangabe DE korrigieren.",
+      "station_ids": "02139927-print | 00207189-print | 02177641-print",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    },
+    {
+      "review_id": "ORT-6b56b2c3b2",
+      "source_label": "Bassano (?)",
+      "assigned_place": "Bassano del Grappa, Italien",
+      "status": "confirmed",
+      "note": "Zuordnung durch Stefan Matter: Dominikanerkloster in Bassano del Grappa. Das Fragezeichen der Quellenangabe bleibt als Quellenbefund erhalten.",
+      "station_ids": "02003026-p001-loc01",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    },
+    {
+      "review_id": "ORT-2987b4033f",
+      "source_label": "Graflingen",
+      "assigned_place": "",
+      "status": "unresolved",
+      "note": "Stefan Matter kann den Ort nicht zuordnen; Grafling bleibt eine Vermutung. Kein Kartenpunkt ohne weitere Klärung.",
+      "station_ids": "02134213-p002-loc01",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    },
+    {
+      "review_id": "ORT-8969cd3279",
+      "source_label": "Monte Leone",
+      "assigned_place": "",
+      "status": "unresolved",
+      "note": "Stefan Matter vermutet einen Ort im Umfeld von Neapel aufgrund der Herkunft der Besitzerin. Daraus keinen Aufenthaltsort des Exemplars ableiten.",
+      "station_ids": "02006490-p001-loc01",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    },
+    {
+      "review_id": "ORT-2fdd958a50",
+      "source_label": "Okno",
+      "assigned_place": "Ukraine",
+      "status": "country_only",
+      "note": "Stefan Matter ordnet Okno der Ukraine zu. Der konkrete gleichnamige Ort ist damit noch nicht eindeutig bestimmt; kein Stadtpunkt.",
+      "station_ids": "02131097-p005-loc01",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    },
+    {
+      "review_id": "ORT-0836e87535",
+      "source_label": "Siebeneich",
+      "assigned_place": "Siebeneich bei Bretzfeld, 74626, Deutschland",
+      "status": "probable",
+      "note": "Wahrscheinliche Zuordnung durch Stefan Matter (dürfte). Nicht als gesichert behandeln.",
+      "station_ids": "02008025-p003-loc01",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    },
+    {
+      "review_id": "ORT-d184dea48d",
+      "source_label": "Vorpillière",
+      "assigned_place": "Vorpillière bei Massongex, Schweiz",
+      "status": "confirmed",
+      "note": "Zuordnung durch Stefan Matter. Bisherige Gebietsangabe Frankreich steht dazu im Widerspruch und bleibt im Original erhalten.",
+      "station_ids": "02005231-p003-loc01 | 02008336-p004-loc01",
+      "source": "Stefan Matter, Chat, 2026-10-10"
+    }
+  ]
+}

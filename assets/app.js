@@ -2,8 +2,8 @@
 
 const CURRENT_YEAR = 2026;
 const DATA_URLS = {
-  copies: "data/map/copies.csv?v=20261010-3",
-  stations: "data/map/stations.csv?v=20261010-3",
+  copies: "data/map/copies.csv?v=20261010-4",
+  stations: "data/map/stations.csv?v=20261010-4",
 };
 
 const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
@@ -13,6 +13,7 @@ const unresolvedLabels = { ambiguous: "ambiguous", country_only: "country only",
 const state = {
   view: "connections",
   locationStyle: "circles",
+  heatRadiusKm: 100,
   bundleStrength: 32,
   lineScale: 1.5,
   focusedSegment: null,
@@ -36,7 +37,7 @@ const state = {
 };
 
 const els = Object.fromEntries([
-  "location-style-controls", "style-circles", "style-heatmap", "heatmap-legend", "circle-legend",
+  "heat-controls", "heat-radius", "heat-radius-value", "location-style-controls", "style-circles", "style-heatmap", "heatmap-legend", "circle-legend",
   "collection-core", "collection-liturgy", "collection-devotional",
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
@@ -430,7 +431,7 @@ function locationPopup(group) {
       <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${spatialNote(station) ? " · " + escapeHtml(spatialNote(station)) : ""}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
 
-// Screen-space density: zooming changes the geographical reach of a 64px kernel.
+// Geographic smoothing radius, converted to screen pixels at each latitude.
 const HEAT_RADIUS = 64;
 const HEAT_STEP = 2;
 let heatCanvas = null;
@@ -438,8 +439,8 @@ let heatReference = { key: null, maximum: 1 };
 function densityField(points, width, height) {
   const cols = Math.ceil(width / HEAT_STEP), rows = Math.ceil(height / HEAT_STEP);
   const values = new Float32Array(cols * rows);
-  const radius = HEAT_RADIUS / HEAT_STEP;
-  for (const {x, y, weight} of points) {
+  for (const {x, y, weight, radiusPixels = HEAT_RADIUS} of points) {
+    const radius = radiusPixels / HEAT_STEP;
     const cx = x / HEAT_STEP, cy = y / HEAT_STEP;
     for (let iy = Math.max(0, Math.floor(cy-radius)); iy < Math.min(rows, Math.ceil(cy+radius)); iy++) {
       for (let ix = Math.max(0, Math.floor(cx-radius)); ix < Math.min(cols, Math.ceil(cx+radius)); ix++) {
@@ -465,6 +466,18 @@ function heatPotential(copies) {
   }
   return [...places.values()];
 }
+function heatKernel(distanceKm) {
+  const ratio = distanceKm / state.heatRadiusKm;
+  return ratio < 1 ? Math.exp(-4.5 * ratio * ratio) - Math.exp(-4.5) : 0;
+}
+function distanceKm(a, b) {
+  const rad = Math.PI / 180, dlat = (b[0]-a[0])*rad, dlon = (b[1]-a[1])*rad;
+  const h = Math.sin(dlat/2)**2 + Math.cos(a[0]*rad)*Math.cos(b[0]*rad)*Math.sin(dlon/2)**2;
+  return 12742 * Math.asin(Math.sqrt(Math.min(1,h)));
+}
+function heatPixelRadius(latitude, zoom) {
+  return state.heatRadiusKm * 1000 * 256 * 2**zoom / (40075016.686 * Math.cos(latitude*Math.PI/180));
+}
 function drawHeatmap(copies, groups) {
   if (!heatCanvas) {
     heatCanvas = document.createElement('canvas');
@@ -478,16 +491,20 @@ function drawHeatmap(copies, groups) {
   heatCanvas.hidden = false;
   const origin = map.containerPointToLayerPoint([0, 0]);
   heatCanvas.style.transform = `translate(${origin.x}px, ${origin.y}px)`;
-  const size = map.getSize(), center = map.getCenter();
-  const project = (coordinates, weight) => ({...map.latLngToContainerPoint(coordinates), weight});
-  const key = [map.getZoom(), center.lat, center.lng, size.x, size.y, copies.map(c=>c.copy_id).join(',')].join('|');
+  const size = map.getSize();
+  const project = (coordinates, weight) => ({...map.latLngToContainerPoint(coordinates), weight, radiusPixels: heatPixelRadius(coordinates[0], map.getZoom())});
+  const key = [state.heatRadiusKm, copies.map(c=>c.copy_id).join(',')].join('|');
   if (key !== heatReference.key) {
     // All recorded localities form a time-independent reference envelope.
     // A copy counts once per candidate locality, not once per provenance record.
-    const potential = heatPotential(copies).map(p=>project(p.coordinates,p.weight));
-    const field = densityField(potential,size.x,size.y);
+    const potential = heatPotential(copies);
+    // Geographic reference at recorded places: independent of viewport and year.
     let maximum = 0;
-    for (const value of field.values) maximum = Math.max(maximum,value);
+    for (const candidate of potential) {
+      let density = 0;
+      for (const place of potential) density += place.weight * heatKernel(distanceKm(candidate.coordinates, place.coordinates));
+      maximum = Math.max(maximum, density);
+    }
     heatReference = {key, maximum: Math.max(1,maximum)};
   }
   const field = densityField(groups.map(g=>project(point(g.station),g.entries.size)),size.x,size.y);
@@ -541,6 +558,7 @@ function setMapView(view) {
   state.view = view;
   els["bundle-controls"].hidden = view !== "connections";
   els["location-style-controls"].hidden = view !== "locations";
+  els["heat-controls"].hidden = view !== "locations" || state.locationStyle !== "heatmap";
   map.closePopup();
   els["view-connections"].setAttribute("aria-pressed", String(view === "connections"));
   els["view-locations"].setAttribute("aria-pressed", String(view === "locations"));
@@ -729,9 +747,15 @@ function bindEvents() {
   map.on("moveend",()=>{if(state.view==="locations" && state.locationStyle==="heatmap")render({list:false})});
   map.on("resize",()=>{if(state.view==="locations")render({list:false})});
   map.on("movestart zoomstart",()=>{if(heatCanvas)heatCanvas.hidden=true});
+  els["heat-radius"].addEventListener("input",event=>{
+    state.heatRadiusKm=Number(event.target.value);
+    els["heat-radius-value"].textContent=state.heatRadiusKm+" km";
+    render({list:false});
+  });
   for (const style of ["circles","heatmap"]) {
     els[`style-${style}`].addEventListener("click",()=>{
       state.locationStyle=style;
+      els["heat-controls"].hidden=style!=="heatmap";
       for(const value of ["circles","heatmap"])els[`style-${value}`].setAttribute("aria-pressed",String(value===style));
       els["heatmap-legend"].hidden=style!=="heatmap";
       els["circle-legend"].hidden=style!=="circles";

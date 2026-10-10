@@ -218,3 +218,7 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .density-canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
 .density-canvas[hidden] { display: none; }
 .heat-gradient { display: inline-block; width: 70px; height: 10px; background: linear-gradient(to right,#ffe082,#f69340,#d54036,#75132f); border-radius: 3px; }
+
+#heat-controls { margin-top: .7rem; }
+#heat-controls[hidden] { display: none; }
+#heat-radius { width: 100%; }

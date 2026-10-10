@@ -31,8 +31,9 @@ state.year=1500;render({list:false});assert.equal(heatReference.key,key);assert.
 map.getZoom; // map itself is outside this VM; change zoom through the supplied object below.
 `,context);
 map.zoom=6;
-vm.runInContext(`render({list:false});assert.notEqual(heatReference.key,key);const zoomKey=heatReference.key;
+vm.runInContext(`render({list:false});assert.equal(heatReference.key,key);assert.equal(heatReference.maximum,max);assert.equal(heatPixelRadius(48,6),2*heatPixelRadius(48,5));const zoomKey=heatReference.key;
 state.year=1800;render({list:false});assert.equal(heatReference.key,zoomKey);
+state.heatRadiusKm=200;render({list:false});assert.notEqual(heatReference.key,key);
 state.collections=new Set();render({list:false});assert.equal(heatReference.maximum,1);
 state.collections=new Set(['core']);state.locationStyle='circles';render({list:false});assert.ok(heatCanvas.hidden);assert.ok(state.layers.every(item=>item.baseFillOpacity===.22));
-console.log('Heatmap passed: weighted density, stable time scale, zoom recalibration, empty selection, markers and circle transparency.');`,context);
+console.log('Heatmap passed: weighted density, stable time scale, geographic zoom scaling and radius changes, empty selection, markers and circle transparency.');`,context);

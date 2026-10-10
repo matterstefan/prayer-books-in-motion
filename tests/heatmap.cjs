@@ -8,9 +8,10 @@ vm.runInContext(fs.readFileSync('assets/app.js','utf8').replace(/loadData\(\);\s
 
 const canvas={style:{},setAttribute(){},getContext(){return {createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)}},putImageData(image){canvas.image=image}}}};
 doc.createElement=()=>canvas;
-map.getContainer=()=>({appendChild(){}});map.getSize=()=>({x:800,y:500});map.getCenter=()=>({lat:48,lng:10});
+const pane={style:{},appendChild(child){this.child=child}};
+map.createPane=()=>pane;map.containerPointToLayerPoint=()=>({x:-120,y:80});map.getSize=()=>({x:800,y:500});map.getCenter=()=>({lat:48,lng:10});
 map.latLngToContainerPoint=([lat,lng])=>({x:400+(lng-10)*2**map.getZoom(),y:250-(lat-48)*2**map.getZoom()});
-context.assert=assert;
+context.assert=assert;context.testCanvas=canvas;context.testPane=pane;
 context.copiesText=fs.readFileSync('data/map/copies.csv','utf8');context.stationsText=fs.readFileSync('data/map/stations.csv','utf8');
 vm.runInContext(`
 state.copies=parseCsv(copiesText).filter(directCopy);
@@ -20,6 +21,11 @@ state.view='locations';state.locationStyle='heatmap';
 const one=densityField([{x:100,y:100,weight:1}],200,200),twice=densityField([{x:100,y:100,weight:2}],200,200);
 assert.ok(one.values.some(v=>v>0));for(let i=0;i<one.values.length;i++)assert.equal(twice.values[i],2*one.values[i]);
 state.year=2026;render({list:false});const key=heatReference.key,max=heatReference.maximum;assert.ok(max>1);
+assert.equal(testPane.style.zIndex,'350');assert.equal(testPane.child,testCanvas);assert.equal(testCanvas.style.transform,'translate(-120px, 80px)');
+assert.ok(testCanvas.image.data.some((value,i)=>i%4===3 && value>0));
+const left=densityField([{x:70,y:100,weight:1}],200,200),right=densityField([{x:130,y:100,weight:1}],200,200);
+const merged=densityField([{x:70,y:100,weight:1},{x:130,y:100,weight:1}],200,200);
+const middle=50*merged.cols+50;assert.ok(left.values[middle]>0 && right.values[middle]>0);assert.ok(merged.values[middle]>left.values[middle]);
 assert.ok(state.layers.every(item=>item.baseFillOpacity===.75));
 state.year=1500;render({list:false});assert.equal(heatReference.key,key);assert.equal(heatReference.maximum,max);
 map.getZoom; // map itself is outside this VM; change zoom through the supplied object below.

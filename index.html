@@ -7,7 +7,7 @@
     <title>Prayer Books in Motion – Copies in motion</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261010-1">
+    <link rel="stylesheet" href="assets/styles.css?v=20261010-2">
   </head>
   <body>
     <header class="topbar">
@@ -24,6 +24,10 @@
           <div class="view-switch" role="group" aria-label="Map view">
             <button id="view-connections" type="button" aria-pressed="true">Connections</button>
             <button id="view-locations" type="button" aria-pressed="false">Locations</button>
+          </div>
+          <div id="location-style-controls" class="view-switch location-style-controls" role="group" aria-label="Location display" hidden>
+            <button id="style-circles" type="button" aria-pressed="true">Circles</button>
+            <button id="style-heatmap" type="button" aria-pressed="false">Heatmap</button>
           </div>
           <div class="section-heading">
             <div>
@@ -86,7 +90,8 @@
           </div>
           <div id="location-legend" class="legend-items" hidden>
             <span><i class="legend-dot documented"></i> Last identifiable locations for the selected year</span>
-            <span>Circle area = number of copies · Dashed outline = country / region · Click to view copies</span>
+            <span id="circle-legend">Circle area = number of copies · Dashed outline = country / region · Click to view copies</span>
+            <span id="heatmap-legend" hidden><i class="heat-gradient"></i> Lower → higher concentration · Scale fixed over time for this selection and map view · Click a dot to view copies · Areas excluded</span>
           </div>
         </div>
         <div id="map-message" class="map-message" hidden></div>
@@ -115,6 +120,7 @@
       <p>The map includes 5,297 MEI copy records directly linked to the selected editions. Indirect bound-with relationships remain in the data tables; their provenance is not automatically transferred to other copies. MEI data retrieved: 9 October 2026, including reused earlier queries. Place review: 10 October 2026.</p>
       <p>The core collection, “GW (Horae and selected editions)”, combines the GW Horae corpus with selected additional editions. Two optional collections add editions identified through MEI’s bibliographic fields: “liturgy” in subject, and “literature-devotional” in subject or keywords. Both additions exclude all editions already in the core collection. They may overlap with each other; each copy is displayed and counted only once. Selecting the liturgical addition alone therefore does not show all liturgical editions in the complete dataset.</p>
       <p>Only copies represented in MEI can be displayed here. The map does not represent all surviving copies or the complete historical circulation of these editions. Place coordinates are supplemented from <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0); a locality point is sufficient for this prototype.</p>
+      <p>In the heatmap, each copy contributes once at its last identifiable local place for the chosen year. Country and region records are excluded. Zooming recalculates the density at the new scale; panning recalibrates it for the visible area. Colours indicate relative concentration, not absolute copy counts. The reference uses all recorded local places of the selected copies, independent of the chosen year. It stays fixed while moving the time slider, but changes with the map view or selection. Small dots provide exact counts and links to copies.</p>
       <p>The last identifiable location is carried forward until the next record, including open date ranges such as “1868–”. This does not mean that the copy remained there throughout that period. The map includes later collecting and book-trade movements as well as early circulation.</p>
       <p>Locations groups copies at the same map point for the selected year. Circle area is proportional to the number of distinct copies. Countries and regions use representative points with dashed outlines; these are not precise locations and are not stops on connection lines. Broad references to Europe or Western Europe have no map point.</p>
       <p>Connections bundles shared links. Line width increases with the square root of the number of distinct copies and can be adjusted. Both directions share a line; individual directions appear in the connection panel. Hovering or clicking highlights only that connection. “Trace this copy” highlights the individual route.</p>
@@ -125,6 +131,6 @@
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261010-1" defer></script>
+    <script src="assets/app.js?v=20261010-2" defer></script>
   </body>
 </html>

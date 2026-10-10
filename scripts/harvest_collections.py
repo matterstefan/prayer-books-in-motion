@@ -8,6 +8,8 @@ unverified candidates: edition links are never attributed to a particular copy.
 import hashlib
 import json
 import re
+import argparse
+import time
 from collections import defaultdict
 from html.parser import HTMLParser
 from pathlib import Path
@@ -121,13 +123,20 @@ def all_urls(value, path=''):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--gw-minutes', type=float, default=80,
+                        help='Time budget for new GW requests; completed queries remain cached')
+    args = parser.parse_args()
+    if args.gw_minutes <= 0:
+        parser.error('--gw-minutes must be positive')
     api.access_user_agent()
     OUT.mkdir(parents=True, exist_ok=True)
     limiter = api.RateLimiter(2)
     core_rows = [row for filename in SOURCE_FILES for row in read_source(filename)]
     core = {i for row in core_rows for i in split_istc_ids(row['istc_id'])}
     discovered = {}
-    status = {'started_at': api.now_iso(), 'complete': False, 'digital_link_errors': []}
+    status = {'started_at': api.now_iso(), 'complete': False, 'digital_link_errors': [],
+              'istc_unresolved_identifiers': []}
     api.atomic_write_json(OUT / 'harvest-status.json', status)
     for group, query in QUERIES.items():
         print('Discovering', group, flush=True)
@@ -168,6 +177,9 @@ def main():
     for meta in combined['metadata']['query_results'].values():
         meta.pop('loaded_from_cache', None)
     api.atomic_write_json(OUT / 'mei-collections.json', combined)
+    status.update(mei_complete=True, editions=len(groups),
+        direct_mei_records=len({r['mei_id'] for r in combined['relationships'] if r['relation_type']=='direct'}))
+    api.atomic_write_json(OUT / 'harvest-status.json', status)
     candidates = []
     direct = {r['mei_id'] for r in combined['relationships'] if r['relation_type'] == 'direct'}
     for record in combined['records']:
@@ -187,6 +199,10 @@ def main():
         try:
             result = cached_query('_id:' + identifier, 'https://data.cerl.org/istc/_search', limiter)
             exact = [r for r in result['rows'] if str(r.get('id', r.get('_id', ''))) == identifier]
+            if result['reported_hits'] == 0:
+                status['istc_unresolved_identifiers'].append(identifier)
+                consecutive_istc_errors = 0
+                continue
             if len(exact) != 1:
                 raise ValueError('ISTC exact record not found')
             istc_records[identifier] = exact[0]
@@ -204,6 +220,7 @@ def main():
             if consecutive_istc_errors >= 3:
                 break
     api.atomic_write_json(OUT / 'istc-records.json', istc_records)
+    api.atomic_write_json(OUT / 'harvest-status.json', status)
     gw_to_istc = defaultdict(set)
     for row in core_rows:
         gw_to_istc[row['gw_url']].update(split_istc_ids(row['istc_id']))
@@ -213,10 +230,18 @@ def main():
             if match:
                 gid = match[1] if match[1].startswith('M') else 'GW' + match[1].zfill(5)
                 gw_to_istc['https://gesamtkatalogderwiegendrucke.de/docs/' + gid + '.htm'].add(record.get('hostItemId', ''))
+    deadline = time.monotonic() + args.gw_minutes * 60
+    pending = []
+    completed_gw = 0
     for n, (url, ids) in enumerate(sorted(gw_to_istc.items()), 1):
+        cache_path = CACHE / ('gw-' + hashlib.sha256(url.encode()).hexdigest() + '.json')
+        if not cache_path.exists() and time.monotonic() >= deadline:
+            pending.append(url)
+            continue
         print(f'GW links {n}/{len(gw_to_istc)}', flush=True)
         try:
             result = gw_links(url, limiter)
+            completed_gw += 1
             for link in result['links']:
                 candidates.append(dict(source='GW', level='edition', mei_id='', istc_id=' | '.join(sorted(ids)),
                     url=link['url'], source_field='Digitalisat', note=link['label'], source_url=url))
@@ -224,14 +249,20 @@ def main():
             status['digital_link_errors'].append({'source': 'GW', 'url': url, 'error_type': type(error).__name__})
         if n % 25 == 0:
             api.atomic_write_json(OUT / 'digital-link-candidates.json', candidates)
+            status.update(gw_completed=completed_gw, gw_expected=len(gw_to_istc))
+            api.atomic_write_json(OUT / 'harvest-status.json', status)
     api.atomic_write_json(OUT / 'digital-link-candidates.json', candidates)
-    status.update(complete=not status['digital_link_errors'], mei_complete=True,
+    status.update(complete=not status['digital_link_errors'] and not pending and not status['istc_unresolved_identifiers'], mei_complete=True,
+        gw_completed=completed_gw, gw_expected=len(gw_to_istc), gw_pending=pending,
+        needs_resume=bool(pending),
         finished_at=api.now_iso(), editions=len(groups), direct_mei_records=len(direct),
         group_editions={g: sum(g in v for v in groups.values()) for g in ['core','liturgy','devotional']},
         digital_link_candidates=len(candidates), istc_records_retrieved=len(istc_records),
         istc_records_expected=len(identifiers))
     api.atomic_write_json(OUT / 'harvest-status.json', status)
-    print(json.dumps(status, ensure_ascii=False, indent=2))
+    print(json.dumps({**status, 'gw_pending': len(pending)}, ensure_ascii=False, indent=2))
+    if pending:
+        print('Planned checkpoint reached. Run this workflow again to continue remaining GW pages; cached requests are reused.')
     if status['digital_link_errors']:
         raise SystemExit(2)
 

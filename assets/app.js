@@ -2,8 +2,8 @@
 
 const CURRENT_YEAR = 2026;
 const DATA_URLS = {
-  copies: "data/map/copies.csv?v=20261010-2",
-  stations: "data/map/stations.csv?v=20261010-2",
+  copies: "data/map/copies.csv?v=20261010-3",
+  stations: "data/map/stations.csv?v=20261010-3",
 };
 
 const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
@@ -430,9 +430,9 @@ function locationPopup(group) {
       <p class="popup-meta">${escapeHtml(station.location_label)} · ${escapeHtml(stationTime(station))}${spatialNote(station) ? " · " + escapeHtml(spatialNote(station)) : ""}${station.display_uncertainty ? " · " + escapeHtml(station.display_uncertainty) : ""}</p></div>`).join("")}</div>`;
 }
 
-// Screen-space density: zooming changes the geographical reach of a 28px kernel.
-const HEAT_RADIUS = 28;
-const HEAT_STEP = 4;
+// Screen-space density: zooming changes the geographical reach of a 64px kernel.
+const HEAT_RADIUS = 64;
+const HEAT_STEP = 2;
 let heatCanvas = null;
 let heatReference = { key: null, maximum: 1 };
 function densityField(points, width, height) {
@@ -444,7 +444,7 @@ function densityField(points, width, height) {
     for (let iy = Math.max(0, Math.floor(cy-radius)); iy < Math.min(rows, Math.ceil(cy+radius)); iy++) {
       for (let ix = Math.max(0, Math.floor(cx-radius)); ix < Math.min(cols, Math.ceil(cx+radius)); ix++) {
         const d2 = ((ix+.5-cx)**2 + (iy+.5-cy)**2) / (radius*radius);
-        if (d2 <= 1) values[iy*cols+ix] += weight * Math.exp(-4.5*d2);
+        if (d2 <= 1) values[iy*cols+ix] += weight * (Math.exp(-4.5*d2) - Math.exp(-4.5));
       }
     }
   }
@@ -470,9 +470,14 @@ function drawHeatmap(copies, groups) {
     heatCanvas = document.createElement('canvas');
     heatCanvas.className = 'density-canvas';
     heatCanvas.setAttribute('aria-hidden', 'true');
-    map.getContainer().appendChild(heatCanvas);
+    const pane = map.createPane('densityPane');
+    pane.style.zIndex = '350'; // Above tiles (200), below markers and popups.
+    pane.style.pointerEvents = 'none';
+    pane.appendChild(heatCanvas);
   }
   heatCanvas.hidden = false;
+  const origin = map.containerPointToLayerPoint([0, 0]);
+  heatCanvas.style.transform = `translate(${origin.x}px, ${origin.y}px)`;
   const size = map.getSize(), center = map.getCenter();
   const project = (coordinates, weight) => ({...map.latLngToContainerPoint(coordinates), weight});
   const key = [map.getZoom(), center.lat, center.lng, size.x, size.y, copies.map(c=>c.copy_id).join(',')].join('|');
@@ -512,7 +517,7 @@ function renderLocations(copies, fit) {
     const entries = [...group.entries.values()], ids = new Set(group.entries.keys());
     located += entries.length;
     const marker = L.circleMarker(point(group.station), {
-      radius: heat ? 4 : 6 * Math.sqrt(entries.length), color: "#75132f", weight: 2,
+      radius: heat ? 3 : 6 * Math.sqrt(entries.length), stroke: false, color: "#75132f", weight: 0,
       fillColor: "#75132f", fillOpacity: heat ? .75 : .22,
       dashArray: isArea(group.station) ? "3 3" : null,
       bubblingMouseEvents: false

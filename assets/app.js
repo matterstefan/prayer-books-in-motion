@@ -28,8 +28,8 @@ const state = {
   selected: new Set(),
   collections: new Set(["core"]),
   search: "",
-  place: "",
-  language: "",
+  places: new Set(),
+  languages: new Set(),
   editionLanguages: {},
   layers: [],
   focusedCopy: null,
@@ -386,8 +386,8 @@ function copyLanguageLabel(copy) {
 function matchesFilters(copy) {
   const station = printStation(copy.copy_id);
   return matchesCollection(copy) && (!state.search || searchable(copy).includes(state.search)) &&
-    (!state.place || station?.location_label === state.place) &&
-    (!state.language || copyFilterLanguages(copy).includes(state.language));
+    (!state.places.size || state.places.has(station?.location_label)) &&
+    (!state.languages.size || copyFilterLanguages(copy).some(code => state.languages.has(code)));
 }
 
 function filteredCopies() { return state.copies.filter(matchesFilters); }
@@ -751,8 +751,18 @@ function closePanel(panel) {
 function populateFilters() {
   const places = [...new Set(state.copies.map(copy => printStation(copy.copy_id)?.location_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en"));
   const languages = [...new Set(state.copies.flatMap(copyFilterLanguages))].sort();
-  els["place-filter"].insertAdjacentHTML("beforeend", places.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(""));
-  els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(languageLabels[value] || value)}</option>`).join(""));
+  els["place-filter"].insertAdjacentHTML("beforeend", places.map(value => `<label><input type="checkbox" value="${escapeHtml(value)}"> <span>${escapeHtml(value)}</span></label>`).join(""));
+  els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<label><input type="checkbox" value="${escapeHtml(value)}"> <span>${escapeHtml(languageLabels[value] || value)}</span></label>`).join(""));
+}
+
+function syncMultiFilters() {
+  for (const [kind, values, all] of [["place", state.places, "All printing places"], ["language", state.languages, "All languages"]]) {
+    const names = [...values].map(value => kind === "language" ? (languageLabels[value] || value) : value);
+    const summary = document.getElementById(`${kind}-summary`);
+    summary.textContent = names.length === 0 ? all : names.length === 1 ? names[0] : `${names.length} selected`;
+    summary.title = names.join(" or ") || all;
+    els[`${kind}-filter`].querySelectorAll("input").forEach(input => { input.checked = values.has(input.value); });
+  }
 }
 
 function changeCollection(group, checked) {
@@ -791,8 +801,29 @@ function bindEvents() {
   els["clear-focus"].addEventListener("click", () => { focusCopy(null); map.closePopup(); closePanel(els["detail-panel"]); });
   els["year-slider"].addEventListener("input", event => { state.year = Number(event.target.value); render({ list: false }); });
   els["search-input"].addEventListener("input", event => { state.search = event.target.value.trim().toLocaleLowerCase("en"); render(); });
-  els["place-filter"].addEventListener("change", event => { state.place = event.target.value; render({ fit: true }); });
-  els["language-filter"].addEventListener("change", event => { state.language = event.target.value; render({ fit: true }); });
+  for (const [kind, values] of [["place", state.places], ["language", state.languages]]) {
+    els[`${kind}-filter`].addEventListener("change", event => {
+      if (event.target.type !== "checkbox") return;
+      event.target.checked ? values.add(event.target.value) : values.delete(event.target.value);
+      syncMultiFilters(); render({ fit: true });
+    });
+    document.getElementById(`${kind}-clear`).addEventListener("click", () => {
+      values.clear(); syncMultiFilters(); render({ fit: true });
+    });
+    const dropdown = document.getElementById(`${kind}-dropdown`);
+    dropdown.addEventListener("toggle", () => {
+      if (dropdown.open) document.getElementById(`${kind === "place" ? "language" : "place"}-dropdown`).open = false;
+    });
+    dropdown.addEventListener("keydown", event => {
+      if (event.key === "Escape") { dropdown.open = false; document.getElementById(`${kind}-summary`).focus(); }
+    });
+  }
+  document.addEventListener("click", event => {
+    for (const kind of ["place", "language"]) {
+      const dropdown = document.getElementById(`${kind}-dropdown`);
+      if (!dropdown.contains(event.target)) dropdown.open = false;
+    }
+  });
   els["print-list"].addEventListener("change", event => {
     const id = event.target.dataset.copySelect;
     if (!id) return;
@@ -809,9 +840,9 @@ function bindEvents() {
     state.collections = new Set(["core"]);
     for (const group of ["core", "liturgy", "devotional"]) els[`collection-${group}`].checked = group === "core";
     focusCopy(null); closePanel(els["detail-panel"]);
-    state.year = CURRENT_YEAR; state.search = ""; state.place = ""; state.language = ""; state.focusedCopy = null;
+    state.year = CURRENT_YEAR; state.search = ""; state.places.clear(); state.languages.clear(); state.focusedCopy = null;
     state.copies.forEach(copy => state.selected.add(copy.copy_id));
-    els["year-slider"].value = CURRENT_YEAR; els["search-input"].value = ""; els["place-filter"].value = ""; els["language-filter"].value = "";
+    els["year-slider"].value = CURRENT_YEAR; els["search-input"].value = ""; syncMultiFilters();
     render({ fit: true });
   });
   document.getElementById("map").addEventListener("click", event => {

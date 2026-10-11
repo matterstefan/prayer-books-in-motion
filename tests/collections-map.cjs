@@ -26,7 +26,7 @@ for(let i=0;i<choices.length;i++) {
 }
 state.collections=new Set(['core','liturgy','devotional']);
 state.search='bologna';assert.ok(filteredCopies().length>0);state.search='';
-state.language='lat';assert.ok(filteredCopies().every(c=>c.language==='lat'));state.language='';
+state.languages.clear();state.languages.add('lat');assert.ok(filteredCopies().every(c=>c.language==='lat'));state.languages.clear();
 const uncertain=[...state.stationsByCopy.values()].flat().filter(s=>s.geolocation_certainty==='probable');assert.ok(uncertain.length);
 for(const s of [...state.stationsByCopy.values()].flat())if(s.map_point_policy==='no_locality_point')assert.equal(hasPoint(s),false);
 const burgdorf=[...state.stationsByCopy.values()].flat().find(s=>s.source_location_label==='Burgdorf');assert.ok(burgdorf);assert.ok(point(burgdorf)[0]>46&&point(burgdorf)[0]<48);

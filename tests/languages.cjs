@@ -26,7 +26,7 @@ for(let i=0;i<choices.length;i++) {
 }
 state.collections=new Set(['core','liturgy','devotional']);
 state.search='bologna';assert.ok(filteredCopies().length>0);state.search='';
-state.language='lat';assert.ok(filteredCopies().every(c=>c.language==='lat'));state.language='';
+state.languages.clear();state.languages.add('lat');assert.ok(filteredCopies().every(c=>c.language==='lat'));state.languages.clear();
 const uncertain=[...state.stationsByCopy.values()].flat().filter(s=>s.geolocation_certainty==='probable');assert.ok(uncertain.length);
 for(const s of [...state.stationsByCopy.values()].flat())if(s.map_point_policy==='no_locality_point')assert.equal(hasPoint(s),false);
 const burgdorf=[...state.stationsByCopy.values()].flat().find(s=>s.source_location_label==='Burgdorf');assert.ok(burgdorf);assert.ok(point(burgdorf)[0]>46&&point(burgdorf)[0]<48);
@@ -38,14 +38,15 @@ state.collections=new Set();render();assert.equal(displayedCopies().length,0);
 state.editionLanguages=JSON.parse(requireLanguages).editions;
 const bilingual=state.copies.find(c=>copyLanguageCodes(c).includes('lat')&&copyLanguageCodes(c).includes('ita'));
 assert.ok(bilingual);state.collections=new Set(['core','liturgy','devotional']);
-state.language='lat';assert.ok(matchesFilters(bilingual));
-state.language='ita';assert.ok(matchesFilters(bilingual));
-state.language='heb';assert.equal(matchesFilters(bilingual),false);
+state.languages.clear();state.languages.add('lat');assert.ok(matchesFilters(bilingual));
+state.languages.clear();state.languages.add('ita');assert.ok(matchesFilters(bilingual));
+state.languages.clear();state.languages.add('heb');assert.equal(matchesFilters(bilingual),false);state.languages.add('ita');assert.ok(matchesFilters(bilingual));
+state.places.add('Not a printing place');assert.equal(matchesFilters(bilingual),false);state.places.add(printStation(bilingual.copy_id).location_label);assert.ok(matchesFilters(bilingual));state.places.clear();
 assert.ok(copyLanguageLabel(bilingual).includes('Latin'));
 assert.ok(copyLanguageLabel(bilingual).includes('Italian'));
 assert.ok(copyFilterLanguages({language:'frm',host_istc_id:'missing'}).includes('fre'));
 assert.equal(copyLanguageCodes({language:'lat',host_istc_id:'missing'})[0],'lat');
-state.language='';
+state.languages.clear();
 console.log('GW multilingual matching, fallback and French grouping passed.');
 console.log('All collection combinations, deduplication, filters, locality policies, detail view and both map modes passed.');
 `,context);

@@ -2,8 +2,8 @@
 
 const CURRENT_YEAR = 2026;
 const DATA_URLS = {
-  copies: "data/map/copies.csv?v=20261010-4",
-  stations: "data/map/stations.csv?v=20261010-4",
+  copies: "data/map/copies.csv?v=20261011-1",
+  stations: "data/map/stations.csv?v=20261011-1",
 };
 
 const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
@@ -13,7 +13,8 @@ const unresolvedLabels = { ambiguous: "ambiguous", country_only: "country only",
 const state = {
   view: "connections",
   locationStyle: "circles",
-  heatRadiusKm: 100,
+  heatRadiusKm: 200,
+  digitalLinks: {copies: {}, editions: {}},
   bundleStrength: 32,
   lineScale: 1.5,
   focusedSegment: null,
@@ -37,7 +38,7 @@ const state = {
 };
 
 const els = Object.fromEntries([
-  "heat-controls", "heat-radius", "heat-radius-value", "location-style-controls", "style-circles", "style-heatmap", "heatmap-legend", "circle-legend",
+  "location-style-controls", "style-circles", "style-heatmap", "heatmap-legend", "circle-legend",
   "collection-core", "collection-liturgy", "collection-devotional",
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
   "print-list", "result-summary", "reset-button", "select-visible", "clear-visible",
@@ -558,7 +559,6 @@ function setMapView(view) {
   state.view = view;
   els["bundle-controls"].hidden = view !== "connections";
   els["location-style-controls"].hidden = view !== "locations";
-  els["heat-controls"].hidden = view !== "locations" || state.locationStyle !== "heatmap";
   map.closePopup();
   els["view-connections"].setAttribute("aria-pressed", String(view === "connections"));
   els["view-locations"].setAttribute("aria-pressed", String(view === "locations"));
@@ -660,6 +660,16 @@ function stationTime(station) {
   return historicalStationTime(station);
 }
 
+function digitalLinksHtml(copy) {
+  const safe = value => typeof value === "string" && /^https?:\/\//i.test(value);
+  const own = (state.digitalLinks.copies[copy.copy_id] || []).filter(x=>safe(x.url));
+  const ownUrls = new Set(own.map(x=>x.url));
+  const edition = (state.digitalLinks.editions[copy.host_istc_id] || []).filter(x=>safe(x.url) && !ownUrls.has(x.url));
+  if (!own.length && !edition.length) return "";
+  const section = (title, links, note) => links.length ? `<details class="digital-links"><summary>${title} (${links.length})</summary><p class="method-note">${note}</p><ul>${links.map(link=>`<li><a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)}</a><small>Source: ${link.sources.filter(s=>safe(s.url)).map(s=>`<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.catalogue)}</a>`).join(", ")}</small></li>`).join("")}</ul></details>` : "";
+  return `<section class="digital-resources"><h3>Digitisation links</h3><p class="method-note">Links supplied by the catalogues; they may lead to complete scans, selected images or resource pages. Completeness has not been verified.</p>${section("This copy",own,"Linked to this copy in MEI.")}${section("This edition",edition,"May show another copy of the same edition; no match to this copy is established.")}</section>`;
+}
+
 function openDetail(copyId, fromConnection = false) {
   const copy = state.copies.find(item => item.copy_id === copyId);
   if (!copy) return;
@@ -682,6 +692,7 @@ function openDetail(copyId, fromConnection = false) {
       <dt>Language</dt><dd>${escapeHtml(languageLabels[copy.language] || copy.language || "not specified")}</dd>
       <dt>Holding institution</dt><dd>${escapeHtml(holdingLabel(copy))}</dd>
     </dl>
+    ${digitalLinksHtml(copy)}
     <h3>Recorded locations</h3>
     <p class="method-note">This list shows the full sequence. Gaps, undated records and missing places prevent a continuous account of the copy’s whereabouts.</p>
     <ol class="station-list">${stations.map(station => {
@@ -747,15 +758,9 @@ function bindEvents() {
   map.on("moveend",()=>{if(state.view==="locations" && state.locationStyle==="heatmap")render({list:false})});
   map.on("resize",()=>{if(state.view==="locations")render({list:false})});
   map.on("movestart zoomstart",()=>{if(heatCanvas)heatCanvas.hidden=true});
-  els["heat-radius"].addEventListener("input",event=>{
-    state.heatRadiusKm=Number(event.target.value);
-    els["heat-radius-value"].textContent=state.heatRadiusKm+" km";
-    render({list:false});
-  });
   for (const style of ["circles","heatmap"]) {
     els[`style-${style}`].addEventListener("click",()=>{
       state.locationStyle=style;
-      els["heat-controls"].hidden=style!=="heatmap";
       for(const value of ["circles","heatmap"])els[`style-${value}`].setAttribute("aria-pressed",String(value===style));
       els["heatmap-legend"].hidden=style!=="heatmap";
       els["circle-legend"].hidden=style!=="circles";
@@ -812,6 +817,9 @@ function bindEvents() {
 async function loadData() {
   try {
     const [copyResponse, stationResponse] = await Promise.all(Object.values(DATA_URLS).map(url => fetch(url)));
+    const digitalResponse = await fetch("data/map/digital-links.json?v=20261011-1");
+    if (!digitalResponse.ok) throw new Error("Could not load digitisation links.");
+    state.digitalLinks = await digitalResponse.json();
     if (!copyResponse.ok || !stationResponse.ok) throw new Error("Could not load the data files.");
     const [copies, stations] = await Promise.all([copyResponse.text().then(parseCsv), stationResponse.text().then(parseCsv)]);
     state.copies = copies.filter(directCopy).sort((a, b) => (a.title || "").localeCompare(b.title || "", "en"));

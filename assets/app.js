@@ -6,7 +6,7 @@ const DATA_URLS = {
   stations: "data/map/stations.csv?v=20261011-1",
 };
 
-const languageLabels = { lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
+const languageLabels = { nds: "Low German", grc: "Ancient Greek", gre: "Greek (GW)", heb: "Hebrew", arc: "Aramaic", ara: "Arabic", tur: "Turkish", hrv: "Croatian", srp: "Serbian", cat: "Catalan", cze: "Czech", lat: "Latin", dut: "Dutch", ita: "Italian", ger: "German", chu: "Church Slavonic", frm: "Middle French", fre: "French", eng: "English", spa: "Spanish" };
 const stationLabels = { print_place: "Printing place", provenance_place: "Provenance record", current_holding: "Current holding location", last_known: "Last known location" };
 const unresolvedLabels = { ambiguous: "ambiguous", country_only: "country only", needs_review: "further review needed", non_geographic: "no geographical information" };
 
@@ -30,6 +30,7 @@ const state = {
   search: "",
   place: "",
   language: "",
+  editionLanguages: {},
   layers: [],
   focusedCopy: null,
   hoveredCopy: null,
@@ -371,11 +372,22 @@ function searchable(copy) {
 function copyCollections(copy) { return (copy.collection_groups || "core").split(" | "); }
 function matchesCollection(copy) { return copyCollections(copy).some(group => state.collections.has(group)); }
 
+function copyLanguageCodes(copy) {
+  const gw = state.editionLanguages[copy.host_istc_id]?.codes;
+  return gw?.length ? gw : (copy.language || "").split(/[;,\s]+/).filter(Boolean);
+}
+function copyFilterLanguages(copy) {
+  return [...new Set(copyLanguageCodes(copy).map(code => code === "frm" ? "fre" : code))];
+}
+function copyLanguageLabel(copy) {
+  return copyLanguageCodes(copy).map(code => languageLabels[code] || code).join(", ") || "not specified";
+}
+
 function matchesFilters(copy) {
   const station = printStation(copy.copy_id);
   return matchesCollection(copy) && (!state.search || searchable(copy).includes(state.search)) &&
     (!state.place || station?.location_label === state.place) &&
-    (!state.language || copy.language === state.language);
+    (!state.language || copyFilterLanguages(copy).includes(state.language));
 }
 
 function filteredCopies() { return state.copies.filter(matchesFilters); }
@@ -633,7 +645,7 @@ function renderList() {
     return `<div class="print-card ${checked ? "" : "is-unselected"}" data-copy-card="${escapeHtml(copy.copy_id)}">
       <input type="checkbox" data-copy-select="${escapeHtml(copy.copy_id)}" aria-label="Show copy: ${escapeHtml(copy.title || copy.copy_id)}" ${checked ? "checked" : ""}>
       <button class="print-card-body" type="button" data-copy-detail="${escapeHtml(copy.copy_id)}"><span class="print-title">${escapeHtml(copy.title || "Untitled")}</span>
-      <span class="print-meta">${escapeHtml(station?.location_label || "Printing place unknown")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(languageLabels[copy.language] || copy.language)}<br>${escapeHtml(holdingLabel(copy))} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
+      <span class="print-meta">${escapeHtml(station?.location_label || "Printing place unknown")} · ${escapeHtml(printYear(copy))} · ${escapeHtml(copyLanguageLabel(copy))}<br>${escapeHtml(holdingLabel(copy))} · <span class="print-id">${escapeHtml(copy.shelfmark || copy.mei_id)}</span></span>
       </button></div>`;
   }).join("");
 }
@@ -689,7 +701,7 @@ function openDetail(copyId, fromConnection = false) {
       <dt>MEI</dt><dd><a href="${escapeHtml(copy.mei_url)}" target="_blank" rel="noopener">${escapeHtml(copy.mei_id)}</a></dd>
       <dt>ISTC</dt><dd><a href="https://data.cerl.org/istc/${escapeHtml(copy.host_istc_id)}" target="_blank" rel="noopener">${escapeHtml(copy.host_istc_id)}</a></dd>
       <dt>GW</dt><dd>${escapeHtml(copy.gw_references || "not specified")}</dd>
-      <dt>Language</dt><dd>${escapeHtml(languageLabels[copy.language] || copy.language || "not specified")}</dd>
+      <dt>Language</dt><dd>${escapeHtml(copyLanguageLabel(copy))}</dd>
       <dt>Holding institution</dt><dd>${escapeHtml(holdingLabel(copy))}</dd>
     </dl>
     ${digitalLinksHtml(copy)}
@@ -738,7 +750,7 @@ function closePanel(panel) {
 
 function populateFilters() {
   const places = [...new Set(state.copies.map(copy => printStation(copy.copy_id)?.location_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en"));
-  const languages = [...new Set(state.copies.map(copy => copy.language).filter(Boolean))].sort();
+  const languages = [...new Set(state.copies.flatMap(copyFilterLanguages))].sort();
   els["place-filter"].insertAdjacentHTML("beforeend", places.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(""));
   els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(languageLabels[value] || value)}</option>`).join(""));
 }
@@ -820,6 +832,9 @@ async function loadData() {
     const digitalResponse = await fetch("data/map/digital-links.json?v=20261011-1");
     if (!digitalResponse.ok) throw new Error("Could not load digitisation links.");
     state.digitalLinks = await digitalResponse.json();
+    const languageResponse = await fetch("data/map/edition-languages.json?v=20261011-5");
+    if (!languageResponse.ok) throw new Error("Could not load language data.");
+    state.editionLanguages = (await languageResponse.json()).editions;
     if (!copyResponse.ok || !stationResponse.ok) throw new Error("Could not load the data files.");
     const [copies, stations] = await Promise.all([copyResponse.text().then(parseCsv), stationResponse.text().then(parseCsv)]);
     state.copies = copies.filter(directCopy).sort((a, b) => (a.title || "").localeCompare(b.title || "", "en"));

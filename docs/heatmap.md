@@ -9,3 +9,6 @@ The colour reference is the maximum potential density evaluated at all recorded 
 The canvas is in a Leaflet pane above tiles and below interactive markers and popups. It realigns and redraws after movement, zoom and resize. Location markers have no outline. No data harvest or new dependencies are required.
 
 Validation: tests/heatmap.cjs verifies summed contributions, populated canvas, pane placement, stable reference across time and zoom, radius changes, empty selections and circle switching. tests/collections-map.cjs verifies collection combinations and other map behaviour. Visual browser verification remains to be done after deployment.
+
+## Current UI (20261011-1)
+The experimental radius slider has been removed after user review. The fixed radius is now 200 km. Earlier slider descriptions above document the previous experiment.

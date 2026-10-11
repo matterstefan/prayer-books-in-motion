@@ -1,0 +1,8 @@
+{
+  "expected_gw": 87,
+  "expected_istc": 2375,
+  "completed_gw": 85,
+  "completed_istc": 2372,
+  "candidate_references": 18754,
+  "errors_this_run": 5
+}

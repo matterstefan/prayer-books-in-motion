@@ -1,0 +1,84 @@
+{
+  "harvest_summary": {
+    "expected_gw": 87,
+    "expected_istc": 2375,
+    "completed_gw": 85,
+    "completed_istc": 2372,
+    "candidate_references": 18754,
+    "errors_this_run": 5
+  },
+  "distinct_source_edition_url_references": 14142,
+  "references_after_four_repeated_footer_labels_removed": 4654,
+  "remaining_by_source": {
+    "ISTC": 4610,
+    "GW": 44
+  },
+  "note": "These remain unverified external references, not counts of full digitizations. Footer filtering is provisional; original data retained.",
+  "errors": [
+    {
+      "source": "ISTC",
+      "url": "https://data.cerl.org/istc/ih00431350%2C2",
+      "istc_ids": [
+        "ih00431350,2"
+      ],
+      "retrieved_at": "2026-10-11T00:10:17.748529+00:00",
+      "level": "edition",
+      "mei_id": "",
+      "status": "error",
+      "error_type": "HTTPError",
+      "http_status": 404
+    },
+    {
+      "source": "ISTC",
+      "url": "https://data.cerl.org/istc/ih00431350%2C1",
+      "istc_ids": [
+        "ih00431350,1"
+      ],
+      "retrieved_at": "2026-10-11T00:10:16.088209+00:00",
+      "level": "edition",
+      "mei_id": "",
+      "status": "error",
+      "error_type": "HTTPError",
+      "http_status": 404
+    },
+    {
+      "source": "GW",
+      "url": "https://gesamtkatalogderwiegendrucke.de/docs/M36036.htm",
+      "istc_ids": [
+        "ip01039850"
+      ],
+      "retrieved_at": "2026-10-10T23:28:43.417768+00:00",
+      "level": "edition",
+      "mei_id": "",
+      "status": "error",
+      "error_type": "HTTPError",
+      "http_status": 404
+    },
+    {
+      "source": "GW",
+      "url": "https://gesamtkatalogderwiegendrucke.de/docs/GW15309.htm",
+      "istc_ids": [
+        "ii00203000"
+      ],
+      "retrieved_at": "2026-10-10T23:25:15.505808+00:00",
+      "level": "edition",
+      "mei_id": "",
+      "status": "error",
+      "error_type": "HTTPError",
+      "http_status": 404
+    },
+    {
+      "source": "ISTC",
+      "url": "https://data.cerl.org/istc/ih00357020%2C1",
+      "istc_ids": [
+        "ih00357020,1"
+      ],
+      "retrieved_at": "2026-10-10T23:58:25.999998+00:00",
+      "level": "edition",
+      "mei_id": "",
+      "status": "error",
+      "error_type": "HTTPError",
+      "http_status": 404
+    }
+  ]
+}

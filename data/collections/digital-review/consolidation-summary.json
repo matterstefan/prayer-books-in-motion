@@ -1,0 +1,18 @@
+{
+  "raw_reference_count": 22874,
+  "distinct_evidence_references": 18262,
+  "unique_urls": 8031,
+  "urls_by_category_overlapping": {
+    "digitisation_reference": 4642,
+    "watermark_resource": 245,
+    "provenance_image": 200,
+    "catalogue_reference": 2941,
+    "page_navigation": 4,
+    "unresolved_resource": 15
+  },
+  "digitisation_display_candidate_urls": 4590,
+  "visualised_copies_with_direct_digitisation_reference": 337,
+  "editions_with_digitisation_reference": 2101,
+  "unresolved_url_count": 15,
+  "full_scans_verified": 0
+}

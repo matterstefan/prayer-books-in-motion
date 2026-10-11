@@ -1,0 +1,13 @@
+{
+  "source": "GW",
+  "url": "https://gesamtkatalogderwiegendrucke.de/docs/M36036.htm",
+  "istc_ids": [
+    "ip01039850"
+  ],
+  "retrieved_at": "2026-10-10T23:28:43.417768+00:00",
+  "level": "edition",
+  "mei_id": "",
+  "status": "error",
+  "error_type": "HTTPError",
+  "http_status": 404
+}

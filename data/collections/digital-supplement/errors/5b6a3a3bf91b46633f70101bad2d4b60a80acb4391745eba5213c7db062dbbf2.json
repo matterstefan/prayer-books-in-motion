@@ -1,0 +1,13 @@
+{
+  "source": "ISTC",
+  "url": "https://data.cerl.org/istc/ih00357020%2C1",
+  "istc_ids": [
+    "ih00357020,1"
+  ],
+  "retrieved_at": "2026-10-10T23:58:25.999998+00:00",
+  "level": "edition",
+  "mei_id": "",
+  "status": "error",
+  "error_type": "HTTPError",
+  "http_status": 404
+}

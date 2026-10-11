@@ -7,7 +7,7 @@
     <title>Prayer Books in Motion – Copies in motion</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261011-1">
+    <link rel="stylesheet" href="assets/styles.css?v=20261011-2">
   </head>
   <body>
     <header class="topbar">
@@ -15,13 +15,7 @@
         <p class="eyebrow">Experimental data visualisation</p>
         <h1>Prayer Books in Motion</h1>
       </div>
-      <button id="about-button" class="quiet-button" type="button" aria-controls="about-panel">About the project</button>
-    </header>
-
-    <main class="workspace">
-      <aside class="controls" aria-label="Map controls">
-        <section class="time-panel">
-          <div class="view-switch" role="group" aria-label="Map view">
+      <nav class="map-tools" aria-label="Map display options">          <div class="view-switch" role="group" aria-label="Map view">
             <button id="view-connections" type="button" aria-pressed="true">Connections</button>
             <button id="view-locations" type="button" aria-pressed="false">Locations</button>
           </div>
@@ -29,6 +23,16 @@
             <button id="style-circles" type="button" aria-pressed="true">Circles</button>
             <button id="style-heatmap" type="button" aria-pressed="false">Heatmap</button>
           </div>
+<div id="bundle-controls" class="bundle-controls" role="group" aria-label="Adjust lines">
+<label for="bundle-strength">Clustering <output id="bundle-value">32</output><input id="bundle-strength" type="range" min="0" max="600" step="4" value="32" aria-label="Clustering radius in CSS pixels"></label>
+<label for="line-scale">Line width <output id="line-value">1.5</output> ×<input id="line-scale" type="range" min="0.5" max="4" step="0.1" value="1.5"></label>
+</div></nav>
+      <button id="about-button" class="quiet-button" type="button" aria-controls="about-panel">About the project</button>
+    </header>
+
+    <main class="workspace">
+      <aside class="controls" aria-label="Map controls">
+        <section class="time-panel">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Copies in motion</p>
@@ -38,17 +42,8 @@
           </div>
           <input id="year-slider" class="year-slider" type="range" min="1450" max="2026" value="2026" step="1" aria-label="Choose a year">
           <div class="year-scale" aria-hidden="true"><span style="left: 0.00000000%">1450</span><span style="left: 8.68055556%">1500</span><span style="left: 26.04166667%">1600</span><span style="left: 60.76388889%">1800</span><span style="left: 100.00000000%">2026</span></div>
-          <p class="method-note">The last known location is carried forward between records. This does not mean that the copy remained there throughout that period. Lines are schematic and may bridge gaps.</p>
         </section>
 
-        <details id="bundle-controls" class="bundle-controls">
-          <summary>Adjust lines · Prototype</summary>
-          <label for="bundle-strength">Clustering radius: <output id="bundle-value">32</output> CSS pixels</label>
-          <input id="bundle-strength" type="range" min="0" max="600" step="4" value="32">
-          <label for="line-scale">Line width: <output id="line-value">1.5</output> ×</label>
-          <input id="line-scale" type="range" min="0.5" max="4" step="0.1" value="1.5">
-          <p>0: individual places. Increase up to 600 to explore broader clusters. Zooming in reduces the geographical reach. Links within a cluster are hidden; at extreme settings all lines may disappear.</p>
-        </details>
         <section class="filter-panel" aria-labelledby="filter-title">
           <h2 id="filter-title" class="visually-hidden">Select and filter copies</h2>
           <fieldset class="collection-choices">
@@ -116,6 +111,8 @@
         <button id="about-close" class="icon-button" type="button" aria-label="Close project information">×</button>
       </div>
       <h2 id="about-title">What this map shows</h2>
+      <p>The last known location is carried forward between records. This does not mean that the copy remained there throughout that period. Lines are schematic and may bridge gaps.</p>
+      <p>Line clustering: 0 keeps individual places separate. Increasing the radius groups nearby places; zooming in reduces its geographical reach. Connections inside a cluster are hidden, so very broad clustering may hide all lines.</p>
       <p>This experimental project reuses publicly accessible catalogue and provenance data from GW, ISTC and MEI. It creates no new catalogue records. Titles, institutional names and source wording are retained in their original languages.</p>
       <p>The map includes 5,297 MEI copy records directly linked to the selected editions. Indirect bound-with relationships remain in the data tables; their provenance is not automatically transferred to other copies. MEI data retrieved: 9 October 2026, including reused earlier queries. Place review: 10 October 2026.</p>
       <p>The core collection, “GW (Horae and selected editions)”, combines the GW Horae corpus with selected additional editions. Two optional collections add editions identified through MEI’s bibliographic fields: “liturgy” in subject, and “literature-devotional” in subject or keywords. Both additions exclude all editions already in the core collection. They may overlap with each other; each copy is displayed and counted only once. Selecting the liturgical addition alone therefore does not show all liturgical editions in the complete dataset.</p>
@@ -131,6 +128,6 @@
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261011-1" defer></script>
+    <script src="assets/app.js?v=20261011-2" defer></script>
   </body>
 </html>

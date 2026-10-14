@@ -366,7 +366,7 @@ function printYear(copy) {
 
 function searchable(copy) {
   const station = printStation(copy.copy_id);
-  return [copy.title, copy.holding_institution_name, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label].join(" ").toLocaleLowerCase("en");
+  return [copy.title, copy.holding_institution_name, copy.shelfmark, copy.mei_id, copy.host_istc_id, copy.gw_references, station?.location_label, filterPlaceLabel(station)].join(" ").toLocaleLowerCase("en");
 }
 
 function copyCollections(copy) { return (copy.collection_groups || "core").split(" | "); }
@@ -383,10 +383,49 @@ function copyLanguageLabel(copy) {
   return copyLanguageCodes(copy).map(code => languageLabels[code] || code).join(", ") || "not specified";
 }
 
+// Display aliases only: original catalogue station labels remain untouched.
+const englishPlaceNames = { Venedig: "Venice", Gent: "Ghent", Prag: "Prague", Mantova: "Mantua", "Kreisfreie Stadt Passau": "Passau", "Piove di Sacco-Piovega": "Piove di Sacco", Italien: "Italy", "Kirchheim im Elsass": "Kirchheim (Alsace)" };
+function filterPlaceLabel(station) {
+  if (!station) return "";
+  const raw = station.location_label || "";
+  const name = station.preferred_placename || raw;
+  const label = englishPlaceNames[name] || name;
+  // Preserve explicitly doubtful identifications as separate, labelled options.
+  return label && !label.includes("?") && (raw.includes("?") || station.geolocation_certainty === "probable") ? `${label} (?)` : label;
+}
+function filterCounts() {
+  const places = new Map(), languages = new Map();
+  for (const copy of state.copies) {
+    if (!matchesCollection(copy) || (state.search && !searchable(copy).includes(state.search))) continue;
+    const place = filterPlaceLabel(printStation(copy.copy_id));
+    const codes = copyFilterLanguages(copy);
+    if (!state.languages.size || codes.some(code => state.languages.has(code))) {
+      if (place) places.set(place, (places.get(place) || 0) + 1);
+    }
+    if (!state.places.size || state.places.has(place)) {
+      for (const code of codes) languages.set(code, (languages.get(code) || 0) + 1);
+    }
+  }
+  return { places, languages };
+}
+function updateFilterAvailability() {
+  const counts = filterCounts();
+  for (const [kind, selected, available] of [["place", state.places, counts.places], ["language", state.languages, counts.languages]]) {
+    for (const input of els[`${kind}-filter`].querySelectorAll("input")) {
+      const count = available.get(input.value) || 0;
+      input.checked = selected.has(input.value);
+      input.disabled = count === 0 && !input.checked;
+      const label = input.closest("label");
+      label.classList.toggle("filter-unavailable", input.disabled);
+      label.querySelector(".filter-count").textContent = ` (${count.toLocaleString("en")})`;
+    }
+  }
+}
+
 function matchesFilters(copy) {
   const station = printStation(copy.copy_id);
   return matchesCollection(copy) && (!state.search || searchable(copy).includes(state.search)) &&
-    (!state.places.size || state.places.has(station?.location_label)) &&
+    (!state.places.size || state.places.has(filterPlaceLabel(station))) &&
     (!state.languages.size || copyFilterLanguages(copy).some(code => state.languages.has(code)));
 }
 
@@ -653,7 +692,7 @@ function renderList() {
 function render({ fit = false, list = true } = {}) {
   els["year-output"].value = String(state.year);
   els["year-output"].textContent = String(state.year);
-  if (list) renderList();
+  if (list) { renderList(); updateFilterAvailability(); }
   renderMap({ fit });
 }
 
@@ -749,10 +788,10 @@ function closePanel(panel) {
 }
 
 function populateFilters() {
-  const places = [...new Set(state.copies.map(copy => printStation(copy.copy_id)?.location_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en"));
+  const places = [...new Set(state.copies.map(copy => filterPlaceLabel(printStation(copy.copy_id))).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en"));
   const languages = [...new Set(state.copies.flatMap(copyFilterLanguages))].sort();
-  els["place-filter"].insertAdjacentHTML("beforeend", places.map(value => `<label><input type="checkbox" value="${escapeHtml(value)}"> <span>${escapeHtml(value)}</span></label>`).join(""));
-  els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<label><input type="checkbox" value="${escapeHtml(value)}"> <span>${escapeHtml(languageLabels[value] || value)}</span></label>`).join(""));
+  els["place-filter"].insertAdjacentHTML("beforeend", places.map(value => `<label><input type="checkbox" value="${escapeHtml(value)}"> <span>${escapeHtml(value)}<small class="filter-count"></small></span></label>`).join(""));
+  els["language-filter"].insertAdjacentHTML("beforeend", languages.map(value => `<label><input type="checkbox" value="${escapeHtml(value)}"> <span>${escapeHtml(languageLabels[value] || value)}<small class="filter-count"></small></span></label>`).join(""));
 }
 
 function syncMultiFilters() {

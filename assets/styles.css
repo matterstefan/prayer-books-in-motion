@@ -284,3 +284,6 @@ select { padding: .45rem 2rem .45rem .55rem; }
 .multi-menu p { margin: 0 0 .4rem; font-weight: 400; }
 .multi-menu label { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; cursor: pointer; }
 .multi-menu input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
+
+.filter-unavailable { opacity: .45; cursor: default !important; }
+.filter-count { font-weight: 400; white-space: nowrap; }

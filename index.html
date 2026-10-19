@@ -7,7 +7,7 @@
     <title>Prayer Books in Motion – Copies in motion</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2375132f'/%3E%3Cpath d='M17 14h23c5 0 9 4 9 9v27H26c-5 0-9-4-9-9V14Z' fill='%23fff'/%3E%3Cpath d='M26 14v36M33 23h10M33 30h10M33 37h8' stroke='%2375132f' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="assets/styles.css?v=20261014-1">
+    <link rel="stylesheet" href="assets/styles.css?v=20261019-1">
   </head>
   <body>
     <header class="topbar">
@@ -46,6 +46,7 @@
 
         <section class="filter-panel" aria-labelledby="filter-title">
           <h2 id="filter-title" class="visually-hidden">Select and filter copies</h2>
+          <div id="search-controls">
           <fieldset class="collection-choices">
             <legend>Collections</legend>
             <label><input id="collection-core" type="checkbox" checked> <span>GW (Horae and selected editions) <small id="count-core"></small></span></label>
@@ -79,6 +80,15 @@
           <div class="selection-actions">
             <button id="select-visible" class="text-button" type="button">Select matching copies</button>
             <button id="clear-visible" class="text-button" type="button">Deselect matching copies</button>
+          </div>
+          </div>
+          <div class="saved-selection" aria-label="My selection">
+            <p id="selection-status" aria-live="polite">My selection: 0 copies · Kept while this page is open.</p>
+            <div class="saved-selection-actions">
+              <button id="save-matches" class="text-button" type="button">Add checked matches</button>
+              <button id="show-selection" class="text-button" type="button" aria-pressed="false" disabled>Show selection</button>
+              <button id="clear-selection" class="text-button" type="button" disabled>Clear selection</button>
+            </div>
           </div>
         </section>
 
@@ -144,6 +154,7 @@
       <p>Both additions exclude editions already in the core collection. They overlap with each other, but each copy is displayed and counted only once. Selecting the liturgical addition alone therefore does not show every liturgical edition in the dataset. These groupings follow catalogue entries and terminology; they do not propose a new definition of prayer books, liturgy or devotional literature.</p>
       <p>Only copies with directly linked MEI records are displayed. Other copies recorded in GW or ISTC are not represented on the map. Indirect bound-with relationships remain in the underlying tables, but provenance is not automatically transferred between constituent prints. The visualisation follows individual copies of editions, rather than assuming that present-day bound volumes have always existed in the same form.</p>
       <h3>Selecting copies</h3>
+      <p>To combine results from several searches, use <strong>Add checked matches</strong>. Only the checked copies matching the current search and filters are added to <strong>My selection</strong>; duplicates are counted once. Change the search and repeat, then choose <strong>Show selection</strong> to view the combined set independently of search and collection filters. Uncheck copies in that view to remove them. <strong>Back to search</strong> restores your search; resetting filters keeps the collected selection. <strong>Clear selection</strong> empties it. The selection lasts only while this page is open and is lost on reload.</p>
       <p>The <strong>Printing places</strong> filter refers to where an edition was printed, not to its later owners or present library. It brings together identified name variants such as “Venedig” and “Venice”; explicitly uncertain identifications remain marked with “(?)”. Original catalogue wording is retained in the copy details.</p>
       <p>Both printing places and languages allow multiple selections. Choices within one filter are combined with <strong>OR</strong>; the two filters are combined with <strong>AND</strong>. For example, selecting Augsburg and Nuremberg together with German and Low German finds copies printed in either city in either language. With no options selected, that filter imposes no restriction.</p>
       <p>Numbers beside filter options count copies within the selected collections and text search, taking the other filter into account. Options with no matches are greyed out, but an already selected option can always be deselected. These counts are independent of the timeline and of the individual checkboxes in the copy list.</p>
@@ -167,6 +178,6 @@
     </aside>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="assets/app.js?v=20261014-1" defer></script>
+    <script src="assets/app.js?v=20261019-1" defer></script>
   </body>
 </html>

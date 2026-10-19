@@ -1,10 +1,11 @@
 # Project documentation
 
-Current baseline: 15 October 2026.
+Grant baseline: 15 October 2026. Post-grant updates are tracked in the roadmap.
 
 Start with these consolidated documents:
 
 - [Method and limitations](project-method.md): corpus, identifiers, time and space, filters, links and coverage.
+- [Roadmap and subsequent improvements](roadmap.md): implemented changes, possible extensions and maintenance.
 - [Maintenance](maintenance.md): active files, updating and checks.
 - [Feedback and decisions](feedback-and-decisions.md): consultation, changes and deferred suggestions.
 - [Action discussion brief](action-discussion-brief.md): a short introduction and proposed follow-up uses.

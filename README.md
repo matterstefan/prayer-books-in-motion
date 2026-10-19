@@ -36,3 +36,5 @@ Then open http://localhost:8000. Opening index.html directly as a local file doe
 Catalogue retrieval is a separate, manually triggered workflow. Preserve caches and review new data before publishing. The CERL access value is held only in the GitHub repository secret `CERL_USER_AGENT`; never put its value in source files or documentation. See [maintenance](docs/maintenance.md).
 
 Current documentation baseline: 15 October 2026. Earlier dated notes remain as a record of development, not as current deployment instructions.
+
+Further development is tracked in the [roadmap](docs/roadmap.md), including the session selection added after grant submission.

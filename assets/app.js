@@ -26,6 +26,8 @@ const state = {
   copies: [],
   stationsByCopy: new Map(),
   selected: new Set(),
+  savedCopies: new Set(),
+  showSaved: false,
   collections: new Set(["core"]),
   search: "",
   places: new Set(),
@@ -39,6 +41,7 @@ const state = {
 };
 
 const els = Object.fromEntries([
+  "search-controls", "save-matches", "show-selection", "clear-selection", "selection-status",
   "location-style-controls", "style-circles", "style-heatmap", "heatmap-legend", "circle-legend",
   "collection-core", "collection-liturgy", "collection-devotional",
   "year-slider", "year-output", "search-input", "place-filter", "language-filter",
@@ -430,7 +433,25 @@ function matchesFilters(copy) {
 }
 
 function filteredCopies() { return state.copies.filter(matchesFilters); }
-function displayedCopies() { return filteredCopies().filter(copy => state.selected.has(copy.copy_id)); }
+function savedCopies() { return state.copies.filter(copy => state.savedCopies.has(copy.copy_id)); }
+function displayedCopies() {
+  return state.showSaved ? savedCopies() : filteredCopies().filter(copy => state.selected.has(copy.copy_id));
+}
+function addCheckedMatches() {
+  filteredCopies().filter(copy => state.selected.has(copy.copy_id)).forEach(copy => state.savedCopies.add(copy.copy_id));
+}
+function renderSelectionControls() {
+  els["search-controls"].hidden = state.showSaved;
+  els["save-matches"].hidden = state.showSaved;
+  els["save-matches"].disabled = !filteredCopies().some(copy => state.selected.has(copy.copy_id));
+  els["show-selection"].textContent = state.showSaved ? "Back to search" : "Show selection";
+  els["show-selection"].setAttribute("aria-pressed", String(state.showSaved));
+  els["show-selection"].disabled = !state.showSaved && !state.savedCopies.size;
+  els["clear-selection"].disabled = !state.savedCopies.size;
+  els["selection-status"].textContent = state.showSaved
+    ? `My selection: ${state.savedCopies.size} copies · Search filters do not apply. Uncheck a copy to remove it.`
+    : `My selection: ${state.savedCopies.size} copies · Kept while this page is open.`;
+}
 
 function routeSummary(copyId) {
   const names = compactStationsForDisplay(copyId).map(s => s.location_label || s.preferred_placename || s.place_name).filter(Boolean);
@@ -677,10 +698,10 @@ function renderMap({ fit = false } = {}) {
 }
 
 function renderList() {
-  const copies = filteredCopies();
+  const copies = state.showSaved ? savedCopies() : filteredCopies();
   els["print-list"].innerHTML = copies.map(copy => {
     const station = printStation(copy.copy_id);
-    const checked = state.selected.has(copy.copy_id);
+    const checked = state.showSaved || state.selected.has(copy.copy_id);
     return `<div class="print-card ${checked ? "" : "is-unselected"}" data-copy-card="${escapeHtml(copy.copy_id)}">
       <input type="checkbox" data-copy-select="${escapeHtml(copy.copy_id)}" aria-label="Show copy: ${escapeHtml(copy.title || copy.copy_id)}" ${checked ? "checked" : ""}>
       <button class="print-card-body" type="button" data-copy-detail="${escapeHtml(copy.copy_id)}"><span class="print-title">${escapeHtml(copy.title || "Untitled")}</span>
@@ -692,7 +713,7 @@ function renderList() {
 function render({ fit = false, list = true } = {}) {
   els["year-output"].value = String(state.year);
   els["year-output"].textContent = String(state.year);
-  if (list) { renderList(); updateFilterAvailability(); }
+  if (list) { renderList(); updateFilterAvailability(); renderSelectionControls(); }
   renderMap({ fit });
 }
 
@@ -866,16 +887,26 @@ function bindEvents() {
   els["print-list"].addEventListener("change", event => {
     const id = event.target.dataset.copySelect;
     if (!id) return;
-    event.target.checked ? state.selected.add(id) : state.selected.delete(id);
+    if (state.showSaved) state.savedCopies.delete(id);
+    else event.target.checked ? state.selected.add(id) : state.selected.delete(id);
     render();
   });
   els["print-list"].addEventListener("click", event => {
     const button = event.target.closest("[data-copy-detail]");
     if (button) openDetail(button.dataset.copyDetail);
   });
+  els["save-matches"].addEventListener("click", () => { addCheckedMatches(); renderSelectionControls(); });
+  els["show-selection"].addEventListener("click", () => {
+    state.showSaved = !state.showSaved;
+    focusCopy(null); closePanel(els["detail-panel"]); render({ fit: true });
+  });
+  els["clear-selection"].addEventListener("click", () => {
+    state.savedCopies.clear(); focusCopy(null); closePanel(els["detail-panel"]); render();
+  });
   els["select-visible"].addEventListener("click", () => { filteredCopies().forEach(copy => state.selected.add(copy.copy_id)); render({ fit: true }); });
   els["clear-visible"].addEventListener("click", () => { filteredCopies().forEach(copy => state.selected.delete(copy.copy_id)); render(); });
   els["reset-button"].addEventListener("click", () => {
+    state.showSaved = false;
     state.collections = new Set(["core"]);
     for (const group of ["core", "liturgy", "devotional"]) els[`collection-${group}`].checked = group === "core";
     focusCopy(null); closePanel(els["detail-panel"]);

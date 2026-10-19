@@ -49,3 +49,7 @@ The compact link file contains copy-level links for 337 MEI identifiers and edit
 ## Interpretation and sustainability
 
 The visualisation includes modern collecting and antiquarian trade as well as earlier circulation. Uneven cataloguing, survival and institutional participation shape all patterns. Source records remain authoritative. Data retrieval is repeatable but not continuous: cached dated responses and documented manual display reviews support traceability, not a guarantee of identical results from changing catalogues.
+
+## Session selections added 19 October 2026
+
+Users can accumulate checked matches across searches. Show selection displays the collected copy identifiers independently of collection, language, place and text filters. The timeline and map display options still apply. Back to search restores the search context; resetting filters does not erase the collection. Clear selection or reloading the page removes it. This is an interface selection, not a new catalogue classification.

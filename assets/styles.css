@@ -287,3 +287,10 @@ select { padding: .45rem 2rem .45rem .55rem; }
 
 .filter-unavailable { opacity: .45; cursor: default !important; }
 .filter-count { font-weight: 400; white-space: nowrap; }
+
+/* Session selection stays separate from the search filters. */
+.saved-selection { border-top: 1px solid #e7ebef; margin-top: .65rem; padding-top: .5rem; }
+.saved-selection p { font-size: .75rem; line-height: 1.35; margin: 0 0 .35rem; }
+.saved-selection-actions { display: flex; flex-wrap: wrap; gap: .35rem .8rem; }
+.saved-selection-actions button:disabled { opacity: .45; cursor: default; }
+#search-controls[hidden], #save-matches[hidden] { display: none; }
